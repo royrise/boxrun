@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cube Runner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Bungee&display=swap">
+<style>
+:root{--bg:#f2f2f5;--fg:#1c1c24;--bar:#ffffffcc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#101015;--fg:#eeeef3;--bar:#1c1c24cc}}
+:root[data-theme="dark"]{--bg:#101015;--fg:#eeeef3;--bar:#1c1c24cc}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:Orbitron,system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;display:flex;justify-content:space-between;padding:10px 14px;font-size:14px;pointer-events:none}
+#hud span{color:#fff;text-shadow:0 2px 8px #000,0 0 3px #000;padding:4px 10px}
+#msg{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;opacity:.8;color:#fff;text-shadow:0 1px 4px #000}
+#time{font-family:Orbitron,sans-serif;font-variant-numeric:tabular-nums;font-size:clamp(22px,5vw,32px);font-weight:800;padding:0 18px!important}
+#hud{justify-content:center;padding-top:4vh}
+#mn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;background:none!important;color:#fff!important;text-shadow:0 2px 8px #000;font-size:22px!important;line-height:1;padding:6px 12px!important}
+#hud button{pointer-events:auto;font:inherit;color:var(--fg);background:var(--bar);border:0;padding:4px 10px;border-radius:8px;cursor:pointer}
+#menu{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(10,12,20,.9);color:#eef;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px);overflow:auto}
+#menu[hidden],.panel[hidden]{display:none}
+.panel{display:flex;flex-direction:column;gap:12px;width:min(340px,100%);text-align:center}
+.panel h1{font-family:Bungee,Orbitron,sans-serif;margin:0;font-size:clamp(34px,9vw,56px);letter-spacing:.06em;color:#5ec8ff}
+.panel h2{margin:0 0 4px;font-size:26px}
+.panel .sub{margin:0 0 12px;opacity:.7}
+.panel button{font:inherit;font-size:18px;color:#eef;background:#2a2d44;border:1px solid #4a4d63;border-radius:10px;padding:12px;cursor:pointer}
+.panel button:hover{background:#383c5c}
+.panel button small{display:block;font-size:13px;opacity:.7;margin-top:2px}
+#lvlist{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 4px;border-bottom:1px solid #ffffff22;text-align:left;font-variant-numeric:tabular-nums}
+#banner{position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity .25s;color:#fff;background:rgba(10,12,20,.82);text-shadow:0 2px 10px #000,0 0 3px #000;padding:22px 12px}
+#banner b{display:block;font-size:clamp(28px,7vw,52px);color:#2fd37a}
+#banner small{display:block;margin-top:6px;font-size:clamp(14px,3.5vw,20px);font-variant-numeric:tabular-nums}
+#banner small.lvn{opacity:.85;margin-top:2px}
+#banner{z-index:4}
+#banner .bb{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+#banner button{pointer-events:auto;font:inherit;font-size:18px;color:#fff;background:#2a2d44;border:1px solid #4a4d63;border-radius:10px;padding:10px 20px;cursor:pointer}
+#banner button.pri{background:#1f9d5c;border-color:#2fd37a}
+#menu{align-items:flex-start}.panel{margin:auto}
+.panel button.on{background:#1f6fb5;border-color:#5ec8ff}
+.panel .sec{margin:10px 0 0;font-size:16px;opacity:.8}
+.crow{display:flex;gap:8px}.crow button:first-child{flex:1}
+#lbtabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}#lbtabs button{font-size:14px;padding:6px 10px}
+#lbbox{max-width:320px;margin:12px auto 0;font-size:15px}#lbbox .lbt{font-weight:600;margin-bottom:4px;opacity:.8}
+.row.me{color:#5ec8ff;font-weight:700}
+.row.sep{margin-top:6px;border-top:1px dashed #fff6}
+#p-main{width:min(380px,100%)}
+.icol{display:flex;flex-direction:column;gap:12px}
+#p-main .icons{display:flex;gap:12px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:8px}
+#p-main .ib{position:relative;width:64px;height:64px;padding:0;display:flex;align-items:center;justify-content:center}
+#p-main .ib::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:170px;text-align:center;font-size:13px;line-height:1.3;background:#000d;color:#fff;padding:5px 9px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .1s;z-index:3}
+#p-main .ib:hover::after{opacity:1;transition:opacity .15s .5s}
+#p-main .ib:focus-visible::after{opacity:1}
+.panel .lbt{font-weight:600;opacity:.85;margin-top:4px}
+.panel input{font:inherit;font-size:20px;text-align:center;letter-spacing:.12em;text-transform:uppercase;color:#eef;background:#1c1c28;border:1px solid #4a4d63;border-radius:10px;padding:10px}
+.panel button.pri{background:#1f9d5c;border-color:#2fd37a}
+#gh{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;background:none!important;color:#fff!important;padding:4px 8px!important;line-height:0}
+#gh.off{opacity:.45}
+#gh.off::after{content:'';position:absolute;left:5px;right:5px;top:50%;border-top:2px solid #fff;transform:rotate(-45deg)}
+.sw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.panel .swb{width:38px;height:38px;padding:0;border-radius:8px;font-size:15px;border:2px solid #4a4d63}
+.panel .swb.on{border-color:#fff;box-shadow:0 0 0 2px #5ec8ff}
+.panel .swb.lock{opacity:.45}
+#skinprev{display:flex;justify-content:center}
+#clist{display:flex;flex-direction:column;gap:8px;text-align:left}
+.cr{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #4a4d63;border-radius:10px}
+.cr .vt{display:flex;flex-direction:column;align-items:center;min-width:34px}
+.panel .cr button{padding:4px 10px;font-size:14px}
+.panel .vt button{padding:0 6px;font-size:14px;line-height:1.3;background:none;border:0}
+.panel .vt button.on{color:#5ec8ff}
+.cr .ci{flex:1;min-width:0}.cr .ci small{display:block;opacity:.7}
+#csort{font:inherit;color:#eef;background:#2a2d44;border:1px solid #4a4d63;border-radius:8px;padding:6px}
+.panel.wide{width:min(720px,100%)}
+#lvwrap{display:flex;gap:18px;text-align:left}#lvleft,#lvside{flex:1;min-width:0}#lvleft{display:flex;flex-direction:column;gap:10px}
+#lvside .lbt{font-weight:600;margin-bottom:6px;opacity:.85}
+@media(max-width:640px){#lvwrap{flex-direction:column}}
+#editor{position:fixed;inset:0;z-index:6;background:#12121a;color:#eef;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#editor[hidden]{display:none}
+#etools{display:flex;flex-wrap:wrap;gap:6px;padding:8px;align-items:center;background:#1c1c28}
+#etools select{font:inherit;font-size:14px;color:#eef;background:#2a2d44;border:1px solid #4a4d63;border-radius:8px;padding:6px}
+#etools button,#etools input{font:inherit;font-size:14px;color:#eef;background:#2a2d44;border:1px solid #4a4d63;border-radius:8px;padding:6px 10px}
+#etools input{width:110px}#etools input[type=number]{width:56px}
+#etools button.on{background:#1f6fb5;border-color:#5ec8ff}
+#epal{display:inline-flex;gap:6px}
+#eanc{display:inline-grid;grid-template-columns:repeat(3,12px);gap:2px}#etools #eanc button{width:12px;height:12px;padding:0;border-radius:2px;border-color:#4a4d63}#etools #eanc button.on{background:#5ec8ff;border-color:#fff}#epal button{padding:4px 6px!important;line-height:0}#epal button svg{display:block}
+#ec{flex:1;min-height:0;width:100%;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><span id="time"></span><button id="mn" aria-label="Menu">←</button><button id="gh" aria-label="Toggle PB ghost" title="PB ghost on/off (G)"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2 2-2.5-2-2.5 2-2-2z"/><circle cx="9.5" cy="11" r="1" fill="currentColor"/><circle cx="14.5" cy="11" r="1" fill="currentColor"/></svg></button></div>
+<div id="banner"></div>
+<div id="menu">
+ <div class="panel" id="p-main"><h1>CUBE RUNNER</h1><p class="sub">Steer. Survive. Don’t touch the lava.</p><div class="icons">
+ <div class="icol">
+  <button class="ib" data-a="play" aria-label="Play" data-tip="Play: start a full run from Level 1"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg></button>
+  <button class="ib" data-a="levels" aria-label="Level Select" data-tip="Level Select: pick a level and see its leaderboard"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></button>
+  <button class="ib" data-a="endless" aria-label="Endless" data-tip="Endless: a random track from a seed. Go as far as you can"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-3-3.5-4-5.5-4a4 4 0 000 8c2 0 3.5-1 5.5-4zm0 0c2 3 3.5 4 5.5 4a4 4 0 000-8c-2 0-3.5 1-5.5 4z"/></svg></button>
+ </div>
+ <div class="icol">
+  <button class="ib" data-a="edit" aria-label="Level Editor" data-tip="Level Editor: build and test your own levels"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg></button>
+  <button class="ib" data-a="comm" aria-label="Community levels" data-tip="Community levels: play, rate and share levels made by players"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></button>
+ </div>
+ <div class="icol">
+  <button class="ib" data-a="lb" aria-label="Leaderboard" data-tip="Leaderboard: the fastest overall runs"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-8h4v8M10 21V6h4v15M16 21v-11h4v11M2 21h20"/></svg></button>
+  <button class="ib" data-a="stats" aria-label="Statistics" data-tip="Statistics: your total time, deaths and completions"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></button>
+  <button class="ib" data-a="skins" aria-label="Skins" data-tip="Skins: choose your cube's colours and unlock more"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2.2-.5-1.2.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>
+ </div>
+</div></div>
+ <div class="panel wide" id="p-levels" hidden><h2>Level Select</h2><div id="lvwrap"><div id="lvleft"><div id="lvlist"></div><small id="lvnote"></small></div><div id="lvside"><div class="lbt" id="lvsidet">Overall</div><div id="lvsideb"></div></div></div><button data-a="back">Back</button></div>
+ <div class="panel wide" id="p-comm" hidden><h2>Community levels</h2><div><select id="csort" title="Sort levels"><option value="rel">Relevance</option><option value="up">Most upvotes</option><option value="net">Top rated</option><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select></div><div id="clist"></div><small id="cnote"></small><button data-a="back">Back</button></div>
+ <div class="panel" id="p-skins" hidden><h2>Skins</h2><div id="skinprev"></div><div class="lbt">Primary colour</div><div class="sw" id="swp"></div><div class="lbt">Secondary colour</div><div class="sw" id="sws"></div><small id="skinnote"></small><button data-a="back">Back</button></div>
+ <div class="panel" id="p-endless" hidden><h2>Endless</h2><p class="sub">A random winding track. Go as far as you can. The same seed always gives the same track.</p><input id="eseed" maxlength="12" autocomplete="off" aria-label="Seed"><button data-a="eroll">Random seed</button><div id="ebest"></div><button data-a="estart" class="pri">Start</button><button data-a="back">Back</button></div>
+ <div class="panel" id="p-lb" hidden><h2>Leaderboard</h2><div id="lbtabs"></div><div id="lbbody"></div><button data-a="back">Back</button></div>
+ <div class="panel" id="p-stats" hidden><h2>Statistics</h2><div id="statlist"></div><button data-a="back">Back</button></div>
+</div>
+<div id="msg">Hold ← / → (or A / D) to turn · R restart level · G ghost on/off · touch: hold left/right side</div>
+<div id="editor" hidden>
+ <div id="etools"><input id="ename" maxlength="24" placeholder="Level name" value="My level"><span id="epal"></span>
+  <input id="ew" type="number" min="6" max="40" title="Width"><span>×</span><input id="eh" type="number" min="6" max="40" title="Height">
+  <select id="eshape" title="Block shape"><option value="f">Full</option><option value="q">Quarter</option><option value="s">Quarter slope</option><option value="h">Half slope</option></select><button data-e="rot" id="erot" title="Rotate shape (R)">◤</button><span id="eanc" title="Resize anchor: the highlighted square is the part of the level that stays put"></span><button data-e="resize">Resize</button><button data-e="test">▶ Test</button><button data-e="save">Save</button><button data-e="export" title="Save this level to a file">Export</button><button data-e="import" title="Load a level file">Import</button><input type="file" id="efile" accept=".json,application/json" hidden><button data-e="back">Back</button><span id="estat"></span></div>
+ <canvas id="ec"></canvas>
+</div>
+<script>
+const LEVELS=[[
+"####################",
+"#..................#",
+"#..................#",
+"#...LLLL.....###...#",
+"#...LLLL.....###...#",
+"#..................#",
+"#.S................#",
+"#..................#",
+"#......###.....LL..#",
+"#......###.....LL.G#",
+"#..................#",
+"####################"],[
+"######################",
+"#S...#...............#",
+"#....#.......LLL.....#",
+"#....#.......LLL.....#",
+"#....#...###.........#",
+"#........###.........#",
+"#....#...........#..G#",
+"#....#....LL......#..#",
+"######################"]];
+const TUT=makeTutorial();LEVELS.unshift(TUT.rows);
+// stable ids for the main levels: records are stored by id (not position), so levels can be reordered safely
+const LID=["tutorial", "lava-field", "pillar-pass", "snake", "lava-ribbon", "hairpin-pads", "staircase", "square-spiral", "lava-waves", "zigzag-bridges", "pad-chicane", "maze", "lava-maze", "slope-hairpins", "pad-maze", "lava-stairs", "lava-mines", "switchbacks", "lava-spiral", "slope-tunnel", "lava-combs", "rapids", "spiral-out", "mega-maze", "finale"];
+const LEGACY={tutorial:'lv2_0','lava-field':'lv2_1','pillar-pass':'lv2_2'}; // leaderboard fields that already exist
+const fld=n=>LEGACY[LID[n]]||'t_'+LID[n];
+// ---- main levels 4-25 (built from small recipes; the outer wall ring is added automatically)
+const LSH=[],LSA=[];
+(()=>{
+  const add=(w,h,fn)=>{
+    const g=Array.from({length:h},()=>Array(w).fill('.')),sh={};let sa=0;
+    const o={
+      r:(x1,y1,x2,y2,c)=>{for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)g[y][x]=c},
+      s:(x,y,k,or)=>{g[y][x]='#';sh[(x+1)+','+(y+1)]=[k,or]},
+      st:(x,y,a)=>{g[y][x]='S';sa=a||0},
+      dia:(x,y)=>{o.s(x,y,'h',2);o.s(x+1,y,'h',3);o.s(x,y+1,'h',1);o.s(x+1,y+1,'h',0)}
+    };
+    fn(o);
+    const W='#'.repeat(w+2);LEVELS.push([W,...g.map(r=>'#'+r.join('')+'#'),W]);
+    LSH[LEVELS.length-1]=sh;LSA[LEVELS.length-1]=sa;
+  };
+  // a winding track: fill the field, then carve a corridor of width wd along the waypoints (axis-aligned legs)
+  const trk=(w,h,fill,wd,pts,fn)=>add(w,h,o=>{
+    o.r(0,0,w-1,h-1,fill);const lo=(wd-1)>>1,hi=wd-1-lo;
+    for(let i=1;i<pts.length;i++){const [a,b]=pts[i-1],[c,d]=pts[i];o.r(Math.min(a,c)-lo,Math.min(b,d)-lo,Math.max(a,c)+hi,Math.max(b,d)+hi,'.')}
+    const [sx,sy]=pts[0],[nx,ny]=pts[1],[ex,ey]=pts[pts.length-1];
+    if(fn)fn(o);
+    o.r(ex-1,ey-1,ex+1,ey+1,'G');o.st(sx,sy,nx>sx?0:ny>sy?1:nx<sx?2:3);
+  });
+  // a perfect maze (always solvable) with 3-wide corridors; lava fills dead ends, pads boost some straight cells
+  const maze=(cw,ch,seed,lava,pads)=>add(cw*4-1,ch*4-1,o=>{
+    let q=seed;const rnd=()=>(q=(q*1664525+1013904223)>>>0)/4294967296;
+    const vis=Array.from({length:ch},()=>Array(cw).fill(0)),deg=Array.from({length:ch},()=>Array(cw).fill(0));
+    o.r(0,0,cw*4-2,ch*4-2,'#');
+    const cell=(x,y,c)=>o.r(x*4,y*4,x*4+2,y*4+2,c||'.'),stack=[[0,0]];vis[0][0]=1;cell(0,0);
+    while(stack.length){
+      const [cx,cy]=stack[stack.length-1];
+      const nb=[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>[cx+dx,cy+dy,dx,dy]).filter(([x,y])=>x>=0&&y>=0&&x<cw&&y<ch&&!vis[y][x]);
+      if(!nb.length){stack.pop();continue}
+      const [nx,ny,dx]=nb[Math.floor(rnd()*nb.length)];vis[ny][nx]=1;cell(nx,ny);
+      if(dx)o.r(Math.min(cx,nx)*4+3,cy*4,Math.min(cx,nx)*4+3,cy*4+2,'.');else o.r(cx*4,Math.min(cy,ny)*4+3,cx*4+2,Math.min(cy,ny)*4+3,'.');
+      deg[cy][cx]++;deg[ny][nx]++;stack.push([nx,ny]);
+    }
+    for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){
+      const end=(x===cw-1&&y===ch-1);if(!(x||y)||end)continue;
+      if(lava&&deg[y][x]===1)cell(x,y,'L');else if(pads&&deg[y][x]===2&&rnd()<.4)cell(x,y,'P');
+    }
+    cell(cw-1,ch-1,'G');o.st(1,1);
+  });
+  trk(30,23,'#',4,[[2,2],[26,2],[26,8],[2,8],[2,14],[26,14],[26,20],[8,20]],o=>{o.r(10,1,12,4,'P');o.r(14,13,16,16,'P')});                  // 4 snake
+  trk(30,28,'L',5,[[3,3],[20,3],[20,10],[6,10],[6,17],[24,17],[24,24],[10,24]]);                                                              // 5 lava ribbon
+  trk(42,20,'#',5,[[3,3],[38,3],[38,10],[3,10],[3,17],[38,17]],o=>{o.r(10,1,13,5,'P');o.r(26,8,29,12,'P');o.r(14,15,17,19,'P')});            // 6 hairpins + pads
+  trk(40,29,'#',4,[[2,2],[10,2],[10,8],[18,8],[18,14],[26,14],[26,20],[34,20],[34,26]]);                                                     // 7 staircase
+  trk(40,29,'#',4,[[2,2],[36,2],[36,26],[8,26],[8,8],[30,8],[30,20],[14,20],[14,14],[24,14]]);                                               // 8 square spiral
+  trk(44,19,'L',5,[[3,3],[3,14],[15,14],[15,3],[27,3],[27,14],[39,14],[39,3]]);                                                              // 9 lava waves
+  trk(34,20,'L',3,[[3,3],[16,3],[16,9],[4,9],[4,15],[20,15],[20,3],[30,3],[30,15]]);                                                         // 10 zigzag bridges
+  trk(46,15,'#',5,[[3,3],[14,3],[14,11],[26,11],[26,3],[38,3],[38,11]],o=>{o.r(7,1,10,5,'P');o.r(18,9,22,13,'P');o.r(30,1,34,5,'P')});       // 11 pad chicane
+  maze(6,4,7,false);                                                                                                                          // 12 maze
+  maze(7,5,21,true);                                                                                                                          // 13 lava maze
+  trk(42,25,'#',5,[[3,4],[38,4],[38,12],[3,12],[3,20],[38,20]],o=>{[[10,2],[18,5],[26,2],[32,5],[28,10],[20,13],[12,10],[6,13],[10,18],[18,21],[26,18]].forEach(([x,y])=>o.dia(x,y))}); // 14 slope hairpins
+  maze(8,4,99,false,true);                                                                                                                    // 15 pad maze
+  add(36,21,o=>{o.r(0,0,35,20,'L');for(let i=0;i<=5;i++)o.r(1+5*i,3*i,9+5*i,3*i+5,'.');o.r(31,17,33,19,'G');o.st(2,1)});                     // 16 lava stairs
+  trk(44,26,'L',5,[[3,3],[40,3],[40,12],[3,12],[3,21],[40,21]],o=>{[[12,3],[20,2],[28,4],[36,3],[32,12],[24,11],[16,13],[8,12],[12,21],[22,20],[30,22]].forEach(([x,y])=>o.r(x,y,x,y,'L'))}); // 17 lava mines
+  trk(40,20,'#',4,[[3,3],[3,16],[11,16],[11,3],[19,3],[19,16],[27,16],[27,3],[35,3],[35,16]],o=>{o.r(2,6,5,10,'P');o.r(18,6,21,10,'P');o.r(34,6,37,10,'P')}); // 18 switchbacks
+  trk(42,30,'L',5,[[3,3],[36,3],[36,26],[9,26],[9,10],[28,10],[28,19],[18,19]]);                                                              // 19 lava spiral
+  trk(44,20,'#',6,[[3,6],[20,6],[20,14],[40,14]],o=>{[7,11,15].forEach((x,i)=>{o.s(x,4,'h',i%2);o.s(x+2,9,'h',3-i%2)});[26,31,36].forEach((x,i)=>{o.s(x,12,'h',i%2);o.s(x+2,17,'h',3-i%2)})}); // 20 slope tunnel
+  trk(36,24,'#',9,[[4,5],[30,5],[30,18],[4,18]],o=>{o.r(10,1,11,6,'L');o.r(16,4,17,9,'L');o.r(22,1,23,6,'L');o.r(24,14,25,19,'L');o.r(18,17,19,22,'L');o.r(12,14,13,19,'L')}); // 21 lava combs
+  trk(44,12,'L',6,[[3,3],[9,3],[9,8],[15,8],[15,3],[21,3],[21,8],[27,8],[27,3],[33,3],[33,8],[39,8]]);                                       // 22 rapids
+  trk(42,30,'#',4,[[20,14],[26,14],[26,20],[14,20],[14,8],[32,8],[32,26],[8,26],[8,2],[38,2]]);                                              // 23 spiral out
+  maze(9,6,5,true,true);                                                                                                                      // 24 mega maze
+  trk(60,26,'#',5,[[3,3],[30,3],[30,12],[8,12],[8,21],[40,21],[40,8],[56,8]],o=>{
+    o.r(8,1,11,5,'P');o.r(20,10,23,14,'P');o.r(10,19,13,23,'P');o.r(38,12,41,16,'P');
+    [[14,11],[18,13],[48,7],[52,9]].forEach(([x,y])=>o.r(x,y,x,y,'L'));[[16,19],[24,22],[32,19]].forEach(([x,y])=>o.dia(x,y));o.dia(16,2);o.dia(24,4)}); // 25 finale
+})();
+
+const U=44, SIZE=0.7, H=SIZE/2, SPEED=4, TURN=2.6;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let W,Hh,dpr;
+function resize(){dpr=window.devicePixelRatio||1;W=innerWidth;Hh=innerHeight;cv.width=W*dpr;cv.height=Hh*dpr}
+addEventListener('resize',resize);resize();
+
+let lvl=0,grid,p,cp,state='play',timer=0,deaths=0,t=0,lt=0,total=0,attempts=1,wasIce=false,slideA=0,lastA=0;
+let pb={levels:[],run:null};
+try{const s=localStorage.getItem('cubeRunnerPB');if(s)pb=Object.assign(pb,JSON.parse(s))}catch(e){}
+function savePB(){try{localStorage.setItem('cubeRunnerPB',JSON.stringify(pb))}catch(e){}}
+function respawn(){if(state==='win'||state==='menu')return;p={x:cp.x,y:cp.y,a:cp.a};attempts++;wasIce=false;lt=0;state='play';rec=[[0,p.x,p.y,p.a]];lastRec=0;gt=0;gi=0}
+let fullRun=false;
+if(!pb.ghosts)pb.ghosts=[];
+let rec=[],lastRec=0,ghost=null,gi=0,gt=0;
+const rnd=(v,n)=>Math.round(v*10**n)/10**n;
+// where the PB ghost is at the current level time: [x,y,angle] or null
+function ghostAt(){
+  const g=ghost;if(!g||g.length<2)return null;
+  while(gi<g.length-2&&g[gi+1][0]<=gt)gi++;
+  const a=g[gi],b=g[gi+1];
+  if(gt>=b[0])return [b[1],b[2],b[3]];
+  if(b[4])return [a[1],a[2],a[3]];
+  const f=(gt-a[0])/(b[0]-a[0]);
+  return [a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,a[3]+(b[3]-a[3])*f];
+}
+function nextLevel(){if(state!=='win')return;if(mode==='main'&&lvl+1<LEVELS.length)load(lvl+1);else showMenu()}
+function again(){if(state!=='win')return;fullRun=false;total=0;load(lvl)}
+const menuEl=document.getElementById('menu');
+function show(id){['main','levels','stats','lb','skins','comm','endless'].forEach(n=>document.getElementById('p-'+n).hidden=n!==id)}
+function showMenu(f){if(mode==='test'&&!f&&!cur.tut){openEditor();return}mode='main';state='menu';keys.left=keys.right=false;touches.clear();banner.style.opacity=0;banner.innerHTML='';menuEl.hidden=false;show('main')}
+function startLevel(n,full){mode='main';cur=null;menuEl.hidden=true;fullRun=full;total=0;deaths=0;load(n)}
+function buildLevels(){
+  let h=LEVELS.map((_,i)=>'<button data-l="'+i+'">Level '+(i+1)+'<small>'+(pb.levels[LID[i]]!=null?'Best '+fmt(pb.levels[LID[i]]):'Not cleared')+'</small></button>').join('');
+  h+='<h3 class="sec">Custom levels</h3>'+(customs.length?customs.map(c=>'<div class="crow"><button data-c="'+c.id+'">'+esc(c.name)+'<small>'+(pb.cl[c.id]!=null?'Best '+fmt(pb.cl[c.id]):'Not cleared')+'</small></button><button data-sh="'+c.id+'" title="Share to the community">Share</button><button data-e2="'+c.id+'">Edit</button><button data-x="'+c.id+'">\u2715</button></div>').join(''):'<small>None yet. Make one in the Level Editor.</small>');
+  document.getElementById('lvlist').innerHTML=h;
+  sideLB('run3','Overall');
+}
+function buildStats(){
+  const done=LEVELS.map((_,i)=>pb.levels[LID[i]]).filter(v=>v!=null),sum=done.reduce((a,b)=>a+b,0);
+  const rows=[['Total PB across all levels',done.length?fmt(sum)+(done.length<LEVELS.length?' ('+done.length+'/'+LEVELS.length+' cleared)':''):'—'],['Best full run',pb.run!=null?fmt(pb.run):'—'],['Total deaths',pb.deaths||0],['Level completions',pb.completions||0]];
+  const patchNone=0;
+  document.getElementById('statlist').innerHTML=rows.map(r=>'<div class="row"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join('');
+}
+menuEl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.l!=null)startLevel(+d.l,false);
+  else if(d.c)startCustom(d.c);
+  else if(d.e2)openEditor(d.e2);
+  else if(d.x){customs=customs.filter(c=>c.id!==d.x);delete pb.cl[d.x];delete pb.cg[d.x];saveCustoms();savePB();buildLevels()}
+  else if(d.sk)pickSkin(d.sk,+d.ci);
+  else if(d.sh)commShare(d.sh);
+  else if(d.vk)commVote(d.vk,+d.vv);
+  else if(d.cp)startComm(d.cp);
+  else if(d.cs)commCopy(d.cs);
+  else if(d.cr)commRemove(d.cr);
+  else if(d.lb)showLB(d.lb);
+  else{const a=d.a;if(a==='play')startLevel(0,true);else if(a==='levels'){buildLevels();show('levels')}else if(a==='stats'){buildStats();show('stats')}else if(a==='lb')showLB('run3');else if(a==='edit')openEditor(null);else if(a==='skins'){buildSkins();show('skins')}else if(a==='comm')showComm();else if(a==='endless')openEndless();else if(a==='eroll')document.getElementById('eseed').value=randSeed();else if(a==='estart')startEndless(document.getElementById('eseed').value.trim()||randSeed());else show('main')}});
+menuEl.addEventListener('pointerdown',e=>e.stopPropagation());
+document.getElementById('banner').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(mode==='endless'){const k=b.dataset.b;if(k==='again')startEndless(curSeed);else if(k==='new')startEndless(randSeed());else showMenu();return}if(b.dataset.b==='again')again();else nextLevel()});
+document.getElementById('banner').addEventListener('pointerdown',e=>e.stopPropagation());
+document.getElementById('mn').addEventListener('pointerdown',e=>{e.stopPropagation();showMenu()});
+// PB ghost on/off (the ghost is still recorded while hidden)
+function setGhost(v){pb.ghostOn=v;savePB();document.getElementById('gh').classList.toggle('off',!v)}
+document.getElementById('gh').classList.toggle('off',pb.ghostOn===false);
+document.getElementById('gh').addEventListener('pointerdown',e=>{e.stopPropagation();setGhost(pb.ghostOn===false)});
+const banner=document.getElementById('banner');
+function fmt1(s){const m=Math.floor(s/60);return m+':'+(Math.floor((s-m*60)*10)/10).toFixed(1).padStart(4,'0')}
+function fmt(s){const ms=Math.round(s*1000),m=Math.floor(ms/60000);return m+':'+((ms-m*60000)/1000).toFixed(3).padStart(6,'0')}
+const lvName=n=>LID[n].split('-').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+function finish(){
+  state='win';timer=1e9;
+  const last=mode!=='main'||lvl+1>=LEVELS.length;
+  const prev=bestOf(),isPB=mode!=='test'&&(prev==null||rnd(lt,3)<rnd(prev,3));
+  if(isPB){rec.push([gt,p.x,p.y,p.a]);const gh=rec.map(s=>[rnd(s[0],3),rnd(s[1],2),rnd(s[2],2),rnd(s[3],2)].concat(s[4]?[1]:[]));
+    if(mode==='main'){pb.levels[LID[lvl]]=rnd(lt,3);pb.ghosts[LID[lvl]]=gh}else{pb.cl[cur.id]=rnd(lt,3);pb.cg[cur.id]=gh}}
+  if(mode!=='test')pb.completions=(pb.completions||0)+1;
+  let txt=mode==='test'?(cur.tut?'Nice! You know the basics.':'Test run '+fmt(lt)+' (not saved)'):'Level time '+fmt(lt)+(prev==null?' \u00b7 First clear!':isPB?' \u00b7 New best! (was '+fmt(prev)+')':rnd(lt,3)===rnd(prev,3)?' \u00b7 Tied your best':' \u00b7 Best '+fmt(prev));
+  txt+='<br>Attempts: '+attempts;
+  const patch={};
+  if(mode==='main')patch[fld(lvl)]=rnd(pb.levels[LID[lvl]],3);
+  if(mode==='main'&&last&&fullRun){const rp=pb.run,runPB=rp==null||rnd(total,3)<rnd(rp,3);if(runPB)pb.run=rnd(total,3);patch.run3=rnd(pb.run,3);txt+='<br>Total '+fmt(total)+(rp==null?' \u00b7 First full run!':runPB?' \u00b7 New best run! (was '+fmt(rp)+')':rnd(total,3)===rnd(rp,3)?' \u00b7 Tied your best run':' \u00b7 Best run '+fmt(rp))}
+  savePB();
+  banner.innerHTML='<b>'+(mode==='main'&&last?'All levels complete!':cur&&cur.tut?'Tutorial complete!':'Level complete!')+'</b><small class="lvn">'+esc(mode==='main'?'Level '+(lvl+1)+' \u00b7 '+lvName(lvl):cur.name)+'</small><small>'+txt+'</small><div id="lbbox"></div><div class="bb"><button data-b="again">Play again (R)</button><button class="pri" data-b="next">'+(last?(mode==='test'&&!cur.tut?'Back to editor':'Main menu'):'Next level')+' (Enter)</button></div>';
+  banner.style.opacity=1;
+  if(mode==='main'){const f=fld(lvl);(async()=>{await lbPut(patch);const all=lbMerge(await lbTop(f,50),patch[f]);let rows=all;if(all){rows=all.slice(0,8);const mi=all.findIndex(r=>r.me);if(mi>=8)rows.push(Object.assign({rank:mi+1},all[mi]))}const el=document.getElementById('lbbox');if(el&&state==='win')el.innerHTML='<div class="lbt">Leaderboard</div>'+lbHTML(rows)})()}
+}
+const keys={left:false,right:false};
+function load(n,keep){
+  lvl=n;grid=(mode==='main'?LEVELS[n]:cur.rows).map(r=>r.split(''));
+  shapes=(mode==='main'?LSH[n]:cur.sh)||{};
+  for(let y=0;y<grid.length;y++)for(let x=0;x<grid[y].length;x++)
+    if(grid[y][x]==='S'){const a0=(mode==='main'?(LSA[n]||0):(cur.sa||0))*Math.PI/2;p={x:x+.5,y:y+.5,a:a0};cp={x:p.x,y:p.y,a:a0,k:null};grid[y][x]='.'}
+  if(!keep)attempts=1;wasIce=false;score=0;state='play';lt=0;banner.style.opacity=0;banner.innerHTML='';rec=[[0,p.x,p.y,p.a]];lastRec=0;gt=0;ghost=ghostOf()||null;gi=0;
+}
+const tile=(x,y)=>(grid[y]&&grid[y][x])||'#';
+
+// SAT: rotated square vs axis-aligned tile
+// block shapes: shapes['x,y']=[kind,orient]; kind q=quarter, s=quarter slope, h=half slope; orient 0..3 = which corner (TL,TR,BR,BL)
+function polyOf(tx,ty,sh){
+  let pts=[[0,0],[1,0],[1,1],[0,1]];
+  if(sh){const k=sh[0],m=k==='h'?1:.5;pts=k==='q'?[[0,0],[m,0],[m,m],[0,m]]:[[0,0],[m,0],[0,m]];
+    for(let i=0;i<sh[1];i++)pts=pts.map(([u,v])=>[1-v,u])}
+  return pts.map(([u,v])=>[tx+u,ty+v]);
+}
+const tilePoly=(tx,ty)=>polyOf(tx,ty,shapes[tx+','+ty]);
+function polyAxes(P){return P.map((a,i)=>{const b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy);return [dy/l,-dx/l]})}
+function fillTile(x,y){
+  const sh=shapes[x+','+y];if(!sh){ctx.fillRect(x*U,y*U,U,U);return}
+  ctx.beginPath();polyOf(x,y,sh).forEach(([X,Y],i)=>i?ctx.lineTo(X*U,Y*U):ctx.moveTo(X*U,Y*U));ctx.closePath();ctx.fill();
+}
+function hits(px,py,a,tx,ty){
+  const c=Math.cos(a),s=Math.sin(a);
+  const ax=[[1,0],[0,1],[c,s],[-s,c]];
+  const pc=[[-H,-H],[H,-H],[H,H],[-H,H]].map(([u,v])=>[px+u*c-v*s,py+u*s+v*c]);
+  const tc=tilePoly(tx,ty);if(shapes[tx+','+ty])ax.push(...polyAxes(tc));
+  for(const [nx,ny] of ax){
+    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
+    for(const q of pc){const d=q[0]*nx+q[1]*ny;a0=Math.min(a0,d);a1=Math.max(a1,d)}
+    for(const q of tc){const d=q[0]*nx+q[1]*ny;b0=Math.min(b0,d);b1=Math.max(b1,d)}
+    if(a1<=b0+1e-6||b1<=a0+1e-6)return false;
+  }
+  return true;
+}
+function touching(px,py,a,types){
+  const x0=Math.floor(px-1),x1=Math.floor(px+1),y0=Math.floor(py-1),y1=Math.floor(py+1);
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
+    if(types.includes(tile(x,y))&&hits(px,py,a,x,y))return true;
+  return false;
+}
+// minimum push vector to get the cube out of a wall tile (null if not overlapping)
+function wallMTV(px,py,a,tx,ty){
+  const c=Math.cos(a),s=Math.sin(a);
+  const ax=[[1,0],[0,1],[c,s],[-s,c]];
+  const pc=[[-H,-H],[H,-H],[H,H],[-H,H]].map(([u,v])=>[px+u*c-v*s,py+u*s+v*c]);
+  const tc=tilePoly(tx,ty);if(shapes[tx+','+ty])ax.push(...polyAxes(tc));
+  let best=1e9,bn=null;
+  for(const [nx,ny] of ax){
+    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
+    for(const q of pc){const d=q[0]*nx+q[1]*ny;a0=Math.min(a0,d);a1=Math.max(a1,d)}
+    for(const q of tc){const d=q[0]*nx+q[1]*ny;b0=Math.min(b0,d);b1=Math.max(b1,d)}
+    const o=Math.min(a1,b1)-Math.max(a0,b0);
+    if(o<=1e-6)return null;
+    if(o<best){best=o;const dir=(a0+a1)/2<(b0+b1)/2?-1:1;bn=[nx*dir,ny*dir]}
+  }
+  return [bn[0]*(best+1e-4),bn[1]*(best+1e-4)];
+}
+// push the cube out of any walls it overlaps; returns true if it ends up clear
+function resolve(){
+  for(let i=0;i<6;i++){
+    let moved=false;
+    for(let y=Math.floor(p.y-1);y<=Math.floor(p.y+1);y++)for(let x=Math.floor(p.x-1);x<=Math.floor(p.x+1);x++){
+      if(tile(x,y)!=='#')continue;
+      const m=wallMTV(p.x,p.y,p.a,x,y);
+      if(m){p.x+=m[0];p.y+=m[1];moved=true}
+    }
+    if(!moved)return true;
+  }
+  return !touching(p.x,p.y,p.a,['#']);
+}
+function update(dt){
+  t+=dt;
+  if(state==='menu')return;
+  if(state==='play'){lt+=dt;gt+=dt;total+=dt;lastA=p.a}
+  document.getElementById('time').textContent=mode==='endless'?Math.floor(score)+' m':(state==='win'?fmt:fmt1)(lt);
+  if(state==='play'){
+    const turn=(keys.right?1:0)-(keys.left?1:0);
+    // turning: if rotating would put a corner into a wall, push out; if that fails, cancel the turn
+    if(turn){
+      const o={x:p.x,y:p.y,a:p.a};
+      p.a+=turn*TURN*dt;
+      if(touching(p.x,p.y,p.a,['#'])&&!resolve()){p.x=o.x;p.y=o.y;p.a=o.a}
+    }
+    // moving: small substeps, then push out of walls. Removing the part of the motion
+    // that points into the wall leaves speed * cos(angle to wall) along it, so a
+    // shallower approach slides faster and a head-on approach barely moves.
+    const onIce=tile(Math.floor(p.x),Math.floor(p.y))==='I';if(onIce&&!wasIce)slideA=lastA;wasIce=onIce;const md=onIce?slideA:p.a; // on ice you keep sliding the way you entered, but can still rotate
+    const iceF=onIce?(1+Math.cos(p.a-slideA))/2:1; // on ice, turning away from your slide direction costs speed
+    const dist=SPEED*iceF*(touching(p.x,p.y,p.a,['P'])?1.5:1)*dt, n=Math.max(1,Math.ceil(dist/0.04)), st=dist/n;
+    for(let i=0;i<n;i++){
+      const o={x:p.x,y:p.y};
+      p.x+=Math.cos(md)*st;p.y+=Math.sin(md)*st;
+      if(touching(p.x,p.y,p.a,['#'])&&!resolve()){p.x=o.x;p.y=o.y}
+    }
+    if(mode==='endless'){const v=cur.dist[Math.floor(p.y)*cur.N+Math.floor(p.x)];if(v>score)score=v}
+    if(gt-lastRec>=1/30){rec.push([gt,p.x,p.y,p.a]);lastRec=gt}
+    if(touching(p.x,p.y,p.a,['L'])){state='dead';timer=0.7;deaths++;if(mode!=='test'){pb.deaths=(pb.deaths||0)+1;savePB()}}
+    else if(touching(p.x,p.y,p.a,['G'])){if(mode==='endless')endRun(true);else finish()}
+  }else{
+    timer-=dt;
+    if(timer<=0){
+      if(state==='dead'){if(mode==='endless')endRun(false);else respawn()}
+      else{if(lvl+1<LEVELS.length)load(lvl+1);else showMenu()}
+    }
+  }
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#14141c';ctx.fillRect(0,0,W,Hh);
+  const sc=Math.max(.9,Math.min(1.8,Math.min(W,Hh)/420));
+  ctx.translate(W/2,Hh/2);ctx.scale(sc,sc);
+  ctx.rotate(-p.a-Math.PI/2);ctx.translate(-p.x*U,-p.y*U);
+  const vr=Math.hypot(W,Hh)/sc/U/2+2;
+  for(let y=Math.floor(p.y-vr);y<=p.y+vr;y++)for(let x=Math.floor(p.x-vr);x<=p.x+vr;x++){
+    const k=tile(x,y);
+    if(y<0||x<0||y>=grid.length||x>=grid[0].length)continue;
+    if(k==='#'){const sh=shapes[x+','+y];if(sh){ctx.fillStyle=(x+y)%2?'#1b1b26':'#1e1e2a';ctx.fillRect(x*U,y*U,U,U)}ctx.fillStyle='#4a4d63';fillTile(x,y);if(!sh){ctx.strokeStyle='#5d6180';ctx.strokeRect(x*U+.5,y*U+.5,U-1,U-1)}}
+    else{
+      ctx.fillStyle=(x+y)%2?'#1b1b26':'#1e1e2a';ctx.fillRect(x*U,y*U,U,U);
+      if(k==='L'){const g=.5+.5*Math.sin(t*4+x+y);ctx.fillStyle=`rgb(${230+20*g|0},${70+50*g|0},20)`;fillTile(x,y);if(!shapes[x+','+y]){ctx.fillStyle='#ffd24a55';ctx.fillRect(x*U+6,y*U+6,U-12,U-12)}}
+      if(k==='I'){ctx.fillStyle='#8fd8ff';ctx.fillRect(x*U,y*U,U,U);ctx.fillStyle='rgba(255,255,255,'+(.25+.12*Math.sin(t*2+x+y))+')';ctx.fillRect(x*U+4,y*U+4,U-8,U-8);ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x*U+9,y*U+U-9);ctx.lineTo(x*U+U-9,y*U+9);ctx.moveTo(x*U+9,y*U+U-20);ctx.lineTo(x*U+20,y*U+9);ctx.stroke()}
+      if(k==='G'){ctx.fillStyle='#2fd37a';ctx.fillRect(x*U+4,y*U+4,U-8,U-8)}
+      if(k==='P'){const a=.75+.25*Math.sin(t*6),pn=tile(x,y-1)==='P',ps=tile(x,y+1)==='P',pw=tile(x-1,y)==='P',pe=tile(x+1,y)==='P';
+        const pad=(m)=>[x*U+(pw?0:m),y*U+(pn?0:m),U-(pw?0:m)-(pe?0:m),U-(pn?0:m)-(ps?0:m)];
+        ctx.fillStyle='#b89a1a';ctx.fillRect(...pad(3));ctx.fillStyle='rgba(255,226,80,'+a+')';ctx.fillRect(...pad(6))}
+      
+    }
+  }
+  const labs=mode==='main'&&lvl===0?TUT.labels:cur&&cur.labels;
+  if(labs){
+    ctx.font='14px system-ui,sans-serif';ctx.textBaseline='top';
+    for(const L of labs){
+      const w=Math.max(...L.t.map(s=>ctx.measureText(s).width))+(L.c?22:0)+14,h=L.t.length*18+10;
+      ctx.save();ctx.translate(L.x*U+w/2,L.y*U+h/2);ctx.rotate(p.a+Math.PI/2);const x=-w/2,y=-h/2;
+      ctx.shadowColor='#000';ctx.shadowBlur=6;
+      if(L.c){ctx.fillStyle=L.c;ctx.fillRect(x+8,y+7,14,14);ctx.strokeStyle='#ffffff88';ctx.strokeRect(x+8.5,y+7.5,13,13)}
+      ctx.fillStyle='#fff';L.t.forEach((s,i)=>ctx.fillText(s,x+7+(L.c?22:0),y+6+i*18));
+      ctx.restore();
+    }
+  }
+  const gp=(state==='menu'||pb.ghostOn===false)?null:ghostAt();
+  if(gp){const gs=SIZE*U;ctx.save();ctx.translate(gp[0]*U,gp[1]*U);ctx.rotate(gp[2]);ctx.globalAlpha=.4;ctx.fillStyle='#fff';ctx.fillRect(-gs/2,-gs/2,gs,gs);ctx.globalAlpha=.8;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.strokeRect(-gs/2,-gs/2,gs,gs);ctx.fillStyle='#fff';ctx.fillRect(gs/2-7,-gs/2+4,5,gs-8);ctx.restore()}
+  ctx.save();ctx.translate(p.x*U,p.y*U);ctx.rotate(p.a);
+  const s=SIZE*U;
+  ctx.fillStyle=state==='dead'?'#ff4d4d':skinCol(pb.skin.p);ctx.fillRect(-s/2,-s/2,s,s);
+  ctx.fillStyle=skinCol(pb.skin.s);ctx.fillRect(s/2-7,-s/2+4,5,s-8); // front marker
+  ctx.restore();
+  if(state==='dead'){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='rgba(255,40,0,.25)';ctx.fillRect(0,0,W,Hh)}
+}
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  update(dt);draw();requestAnimationFrame(loop);
+}
+const map={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'};
+addEventListener('keydown',e=>{
+  if(!editorEl.hidden&&e.target.tagName!=='INPUT'&&['z','r'].includes(e.key.toLowerCase())){e.key.toLowerCase()==='z'?eUndoDo():eRot();return}
+  if(!editorEl.hidden||e.target.tagName==='INPUT')return;
+  if(e.key.toLowerCase()==='g'&&!e.repeat){setGhost(pb.ghostOn===false);return}
+  if(state==='over'&&mode==='endless'){if(e.key==='Enter'){startEndless(randSeed());return}if(e.key.toLowerCase()==='r'){startEndless(curSeed);return}}
+  if(state==='win'){if(e.key==='Enter'){nextLevel();return}if(e.key.toLowerCase()==='r'&&!e.shiftKey){again();return}}
+  if(e.key==='Escape'){showMenu();return}
+  if(e.key.toLowerCase()==='r'&&!e.repeat){if(state==='play'||state==='dead'){if(state==='play'&&lt>3&&mode!=='test'){deaths++;pb.deaths=(pb.deaths||0)+1;savePB()}load(lvl,true);attempts++}return}
+  if(map[e.key]){keys[map[e.key]]=true;e.preventDefault()}
+});
+addEventListener('keyup',e=>{if(map[e.key])keys[map[e.key]]=false});
+const touches=new Map();
+function sync(){let l=false,r=false;touches.forEach(v=>v?r=true:l=true);keys.left=l;keys.right=r}
+addEventListener('pointerdown',e=>{touches.set(e.pointerId,e.clientX>W/2);sync()});
+['pointerup','pointercancel'].forEach(n=>addEventListener(n,e=>{touches.delete(e.pointerId);sync()}));
+let mode='main',cur=null,shapes={};
+if(!pb.cl)pb.cl={};if(!pb.cg)pb.cg={};
+// the tutorial became Level 1: shift saved levels/ghosts down one and retire old-format run times
+if(!pb.v){pb.levels.unshift(null);pb.ghosts.unshift(null);pb.run=null;pb.v=2}
+if(pb.v<3){pb.run=null;pb.v=3}
+// v4: bests/ghosts are stored by level id. Only the first 3 levels kept their layout, so only those carry over.
+if(pb.v<4){if(Array.isArray(pb.levels)){const o={},gh={};[0,1,2].forEach(i=>{if(pb.levels[i]!=null)o[LID[i]]=pb.levels[i];if(pb.ghosts[i])gh[LID[i]]=pb.ghosts[i]});pb.levels=o;pb.ghosts=gh}pb.v=4;savePB()}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const bestOf=()=>mode==='main'?pb.levels[LID[lvl]]:mode==='custom'?pb.cl[cur.id]:null;
+const ghostOf=()=>mode==='main'?pb.ghosts[LID[lvl]]:mode==='custom'?pb.cg[cur.id]:null;
+let customs=[];try{customs=JSON.parse(localStorage.getItem('cubeRunnerCustom')||'[]')}catch(e){}
+function saveCustoms(){try{localStorage.setItem('cubeRunnerCustom',JSON.stringify(customs))}catch(e){}}
+// tutorial: a walled hall with one of each block type, each explained by a sign
+function makeTutorial(){
+  const W=48,H=11,g=[];
+  for(let y=0;y<H;y++){g.push([]);for(let x=0;x<W;x++)g[y].push(x===0||y===0||x===W-1||y===H-1?'#':'.')}
+  for(let y=1;y<=6;y++){g[y][13]='#';g[y][14]='#'}
+  for(let y=3;y<=9;y++){g[y][27]='L';g[y][28]='L'}
+  for(let y=3;y<=7;y++){g[y][45]='G';g[y][46]='G'}
+  for(let y=1;y<=9;y++){g[y][36]='P';g[y][37]='P'}
+  g[5][2]='S';
+  return {name:'Tutorial',tut:true,rows:g.map(r=>r.join('')),labels:[
+    {x:1.5,y:1.5,c:'#5ec8ff',t:['You are the cube. It always moves forward.','Hold ← / → (A / D, or touch) to turn.','Press R to restart the level.']},
+    {x:1.5,y:8,c:'#2b2b3a',t:['Dark floor is safe to cross.']},
+    {x:15.5,y:1.5,c:'#4a4d63',t:['Grey walls block you (they never hurt).','Turn to slide along them, then','find the gap.']},
+    {x:30,y:1.5,c:'#e8541a',t:['Orange lava kills you instantly','and restarts the level.','Find the gap.']},
+    {x:30,y:8,c:'#e8c21a',t:['Yellow speed pad: 50% faster','while you stand on it.']},
+    {x:38.5,y:8,c:'#2fd37a',t:['Green goal: touch it to finish!','Your time and best are saved.']}
+  ]};
+}
+function startCustom(id){menuEl.hidden=true;mode='custom';cur=customs.find(c=>c.id===id);fullRun=false;total=0;deaths=0;load(0)}
+
+// ---- shared leaderboards (one db doc per player: lb/<id> = {l0,l1,...,run})
+// ---- skins: pick a primary and a secondary colour; colours unlock by doing things
+if(!pb.skin)pb.skin={p:'sky',s:'navy'};
+const COLORS=[
+ {id:'sky',n:'Sky',h:'#5ec8ff',t:'Free',u:()=>1},
+ {id:'white',n:'White',h:'#f2f2f5',t:'Free',u:()=>1},
+ {id:'navy',n:'Navy',h:'#0b2a3a',t:'Free',u:()=>1},
+ {id:'ink',n:'Ink',h:'#1a1a22',t:'Free',u:()=>1},
+ {id:'mint',n:'Mint',h:'#2fd37a',t:'Clear the tutorial',u:S=>S.tut},
+ {id:'sun',n:'Sun',h:'#ffd24a',t:'Complete 5 levels',u:S=>S.comp>=5},
+ {id:'ember',n:'Ember',h:'#ff8a3d',t:'Complete 10 levels',u:S=>S.comp>=10},
+ {id:'rose',n:'Rose',h:'#ff6fb5',t:'Clear 5 different levels',u:S=>S.clear>=5},
+ {id:'grape',n:'Grape',h:'#a56bff',t:'Clear 10 different levels',u:S=>S.clear>=10},
+ {id:'ocean',n:'Ocean',h:'#3d7bff',t:'Complete 25 levels',u:S=>S.comp>=25},
+ {id:'teal',n:'Teal',h:'#2fd3c8',t:'Die 25 times',u:S=>S.dead>=25},
+ {id:'blood',n:'Blood',h:'#ff4d4d',t:'Die 100 times',u:S=>S.dead>=100},
+ {id:'lime',n:'Lime',h:'#b6ff3d',t:'Clear 15 different levels',u:S=>S.clear>=15},
+ {id:'neon',n:'Neon',h:'#ff2fd0',t:'Complete 50 levels',u:S=>S.comp>=50},
+ {id:'gold',n:'Gold',h:'#e8c21a',t:'Clear 20 different levels',u:S=>S.clear>=20},
+ {id:'void',n:'Void',h:'#000000',t:'Die 500 times',u:S=>S.dead>=500},
+ {id:'prism',n:'Prismatic',h:'rainbow',t:'Finish a full run of all 25 levels',u:S=>S.run}
+];
+const skinStats=()=>({comp:pb.completions||0,dead:pb.deaths||0,clear:LEVELS.filter((_,i)=>pb.levels[LID[i]]!=null).length,tut:pb.levels.tutorial!=null,run:pb.run!=null});
+const colOf=id=>COLORS.find(c=>c.id===id)||COLORS[0];
+const skinCol=id=>{const h=colOf(id).h;return h==='rainbow'?'hsl('+((t*90)%360)+',90%,60%)':h};
+function buildSkins(note){
+  const S=skinStats();
+  for(const k of ['p','s'])document.getElementById('sw'+k).innerHTML=COLORS.map((c,i)=>{const ok=c.u(S);
+    return '<button class="swb'+(pb.skin[k]===c.id?' on':'')+(ok?'':' lock')+'" data-sk="'+k+'" data-ci="'+i+'" title="'+esc(c.n+(ok?'':' - '+c.t))+'" style="background:'+(c.h==='rainbow'?'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)':c.h)+'">'+(ok?'':'\u{1F512}')+'</button>'}).join('');
+  document.getElementById('skinnote').textContent=note||'Pick a primary and a secondary colour. Hover a locked colour to see how to unlock it.';
+  document.getElementById('skinprev').innerHTML='<svg viewBox="0 0 60 60" width="72" height="72"><rect x="8" y="8" width="44" height="44" rx="3" fill="'+skinCol(pb.skin.p)+'"/><rect x="40" y="13" width="7" height="34" fill="'+skinCol(pb.skin.s)+'"/></svg>';
+}
+function pickSkin(k,i){const c=COLORS[i];if(!c.u(skinStats())){buildSkins('Locked: '+c.n+' - '+c.t);return}pb.skin[k]=c.id;savePB();buildSkins(c.n+' selected')}
+
+// ---- community levels: shared in db as lv/<author> = {levels:{id:{...}}} and vt/<voter> = {v:{levelKey:1|-1}}
+let commList=[],commSort='rel',myVotes={};
+const lvNote=t=>{const e=document.getElementById('lvnote');if(e)e.textContent=t||''},cNote=t=>{document.getElementById('cnote').textContent=t||''};
+function cleanLvl(L){
+  try{
+    const rows=(L.rows||[]).map(String),w=rows[0].length;
+    if(rows.length<3||rows.length>60||w<3||w>60||rows.some(r=>r.length!==w||/[^#.LPISG]/.test(r)))return null;
+    if((rows.join('').match(/S/g)||[]).length!==1||!rows.join('').includes('G'))return null;
+    const sh={},s0=typeof L.sh==='string'?JSON.parse(L.sh):(L.sh||{});
+    for(const k in s0){const v=s0[k];if(/^\d+,\d+$/.test(k)&&Array.isArray(v)&&typeof v[0]==='string'&&v[0].length===1&&'qsh'.includes(v[0])&&v[1]>=0&&v[1]<4)sh[k]=[v[0],v[1]|0]}
+    return {name:String(L.name||'Untitled').slice(0,24),rows,sh,sa:(L.sa|0)&3,at:+L.at||0};
+  }catch(e){return null}
+}
+async function commLoad(){
+  if(!db||!uid)return null;
+  try{
+    const [ls,vs]=await Promise.all([db.collection('lv').get(),db.collection('vt').get()]);
+    const list=[],byKey={};myVotes={};
+    ls.docs.forEach(d=>{const lv=d.data().levels||{};for(const id in lv){const c=cleanLvl(lv[id]);if(c){const l=Object.assign(c,{key:d.id+'_'+id,by:d.id,id,up:0,down:0});list.push(l);byKey[l.key]=l}}});
+    vs.docs.forEach(d=>{const v=d.data().v||{};for(const k in v){const l=byKey[k];if(!l)continue;if(v[k]>0)l.up++;else if(v[k]<0)l.down++;if(d.id===uid)myVotes[k]=v[k]}});
+    if(usersNS&&list.length){try{const ids=[...new Set(list.map(l=>l.by))],ps=await usersNS.profiles(ids);list.forEach(l=>l.byName=(ps[l.by]&&ps[l.by].name)||'Player')}catch(e){}}
+    return list;
+  }catch(e){return null}
+}
+function commSorted(){
+  const now=Date.now(),net=l=>l.up-l.down,L=commList.slice();
+  if(commSort==='az')return L.sort((a,b)=>a.name.localeCompare(b.name));
+  const f={rel:l=>(net(l)+1)/Math.pow(1+(now-l.at)/864e5,1.2),up:l=>l.up,net,new:l=>l.at,old:l=>-l.at}[commSort];
+  return L.sort((a,b)=>f(b)-f(a)||b.at-a.at);
+}
+const ago=ms=>{const m=(Date.now()-ms)/6e4;return m<60?Math.max(1,m|0)+' min ago':m<1440?(m/60|0)+' h ago':(m/1440|0)+' d ago'};
+function renderComm(){
+  const el=document.getElementById('clist');
+  if(!commList.length){el.innerHTML='<small>No community levels yet. Share one from Level Select.</small>';return}
+  el.innerHTML=commSorted().map(l=>{
+    const mine=l.by===uid,v=myVotes[l.key]||0;
+    return '<div class="cr"><div class="vt"><button data-vk="'+l.key+'" data-vv="1" class="'+(v>0?'on':'')+'"'+(mine?' disabled':'')+'>\u25b2</button><b>'+(l.up-l.down)+'</b><button data-vk="'+l.key+'" data-vv="-1" class="'+(v<0?'on':'')+'"'+(mine?' disabled':'')+'>\u25bc</button></div>'+
+    '<div class="ci"><b>'+esc(l.name)+'</b><small>by '+esc(mine?'you':l.byName||'Player')+' \u00b7 '+ago(l.at)+' \u00b7 \u25b2'+l.up+' \u25bc'+l.down+'</small></div>'+
+    '<button data-cp="'+l.key+'">Play</button><button data-cs="'+l.key+'" title="Save a copy to My levels">Copy</button>'+(mine?'<button data-cr="'+l.key+'" title="Remove from the community">Remove</button>':'')+'</div>';
+  }).join('');
+}
+async function showComm(){
+  show('comm');cNote('');const el=document.getElementById('clist');el.textContent='Loading\u2026';
+  const list=await commLoad();
+  if(list===null){el.textContent='';cNote('Community levels need you to be signed in to claude.ai.');return}
+  commList=list;renderComm();
+}
+async function commShare(id){
+  const c=customs.find(c=>c.id===id);if(!c)return;
+  if(!db||!uid){lvNote('Sign in to claude.ai to share levels.');return}
+  try{
+    const ref=db.doc('lv/'+uid),sn=await ref.get(),d=sn.exists?sn.data():{};d.levels=d.levels||{};
+    const prev=d.levels[id];
+    if(!prev&&Object.keys(d.levels).length>=20){lvNote('You can share up to 20 levels. Remove one first.');return}
+    d.levels[id]={name:c.name,rows:c.rows,sh:JSON.stringify(c.sh||{}),sa:c.sa||0,at:prev?prev.at:Date.now()};
+    await ref.set(d);lvNote(prev?'Updated your shared copy of "'+c.name+'".':'"'+c.name+'" is now shared. Find it under Community levels.');
+  }catch(e){lvNote('Could not share the level.')}
+}
+async function commVote(key,val){
+  const l=commList.find(x=>x.key===key);if(!l||l.by===uid||!db||!uid)return;
+  const cur=myVotes[key]||0,nv=cur===val?0:val;
+  if(cur>0)l.up--;if(cur<0)l.down--;if(nv>0)l.up++;if(nv<0)l.down++;
+  if(nv)myVotes[key]=nv;else delete myVotes[key];
+  renderComm();
+  try{await db.doc('vt/'+uid).set({v:myVotes})}catch(e){cNote('Could not save your vote.')}
+}
+function startComm(key){
+  const l=commList.find(x=>x.key===key);if(!l)return;
+  menuEl.hidden=true;mode='custom';cur={id:'cm_'+key,name:l.name,rows:l.rows,sh:l.sh,sa:l.sa};fullRun=false;total=0;deaths=0;load(0);
+}
+function commCopy(key){
+  const l=commList.find(x=>x.key===key);if(!l)return;
+  customs.push({id:'c'+Date.now().toString(36),name:l.name,rows:l.rows.slice(),sh:JSON.parse(JSON.stringify(l.sh)),sa:l.sa});saveCustoms();cNote('Saved "'+l.name+'" to My levels.');
+}
+async function commRemove(key){
+  const l=commList.find(x=>x.key===key);if(!l||l.by!==uid||!db)return;
+  try{const ref=db.doc('lv/'+uid),sn=await ref.get(),d=sn.exists?sn.data():{levels:{}};if(d.levels)delete d.levels[l.id];await ref.set(d);commList=commList.filter(x=>x!==l);renderComm();cNote('Removed.')}
+  catch(e){cNote('Could not remove the level.')}
+}
+document.getElementById('csort').addEventListener('change',e=>{commSort=e.target.value;renderComm()});
+
+// ---- endless mode: a seeded, winding track with hazards that get harder; score = distance along the track
+let curSeed='',score=0;
+const randSeed=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+function genEndless(seed){
+  let h=2166136261;for(const c of seed){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}
+  let sd=h>>>0;const rnd=()=>{sd=(sd+0x6D2B79F5)>>>0;let t=sd;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
+  const N=480,g=Array.from({length:N},()=>Array(N).fill('#')),dist=new Float32Array(N*N).fill(-1),used=new Uint8Array(N*N),sh={};
+  const DX=[1,0,-1,0],DY=[0,1,0,-1],inb=(x,y)=>x>=3&&y>=3&&x<N-3&&y<N-3;
+  let x=240,y=240,dir=(rnd()*4)|0,d0=0;const sx=x,sy=y,sa=dir;
+  const fits=(d,w,L)=>{const lo=(w-1)>>1,hi=w-1-lo,px=-DY[d],py=DX[d];
+    for(let k=w;k<=L+hi+2;k++)for(let o=-lo-2;o<=hi+2;o++){const cx=x+DX[d]*k+px*o,cy=y+DY[d]*k+py*o;if(!inb(cx,cy)||used[cy*N+cx])return false}return true};
+  const carve=(d,w,L)=>{const lo=(w-1)>>1,hi=w-1-lo,px=-DY[d],py=DX[d];
+    for(let k=-lo;k<=L+hi;k++)for(let o=-lo;o<=hi;o++){const cx=x+DX[d]*k+px*o,cy=y+DY[d]*k+py*o,i=cy*N+cx;g[cy][cx]='.';used[i]=1;const v=d0+Math.max(0,Math.min(L,k));if(v>dist[i])dist[i]=v}};
+  const features=(seg,r,w,L)=>{
+    const lo=(w-1)>>1,hi=w-1-lo,px=-DY[dir],py=DX[dir],at=(k,o)=>[x+DX[dir]*k+px*o,y+DY[dir]*k+py*o];
+    const z0=w+2,zl=L-2*w-3,snap=[],put=(k,o,c)=>{const [cx,cy]=at(k,o);if(g[cy][cx]==='.'){snap.push([cx,cy]);g[cy][cx]=c}};
+    // one hazard per segment (two at higher difficulty); ice and pads never share a segment with other hazards
+    const pick=()=>{const t=rnd();return t<.28?'mine':t<.5?'bar':t<.66?'pad':t<.8?'ice':t<.92&&w>=5?'dia':'pil'};
+    const solo=ty=>ty==='ice'||ty==='pad',types=[pick()];
+    if(!solo(types[0])&&zl>=7&&r>.3){for(let tr=0;tr<6;tr++){const t2=pick();if(!solo(t2)&&t2!==types[0]){types.push(t2);break}}}
+    types.forEach((ty,i)=>{
+      const k=z0+Math.floor((i+rnd()*.6)*zl/types.length);
+      if(ty==='mine'){for(let n=0,m=1+((r*3)|0);n<m;n++)put(k+3*n,-lo+((rnd()*w)|0),'L')}                                  // lava mines
+      else if(ty==='bar'){const go=-lo+((rnd()*(w-2))|0),th=r>.6?2:1;for(let q=0;q<th;q++)for(let o=-lo;o<=hi;o++)if(o<go||o>go+2)put(k+q,o,'L')} // lava bar with a gap
+      else if(ty==='pad'){for(let q=0;q<3;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'P')}                                       // speed pads
+      else if(ty==='ice'){const len=4+((rnd()*3)|0);for(let q=0;q<len;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'I')}           // ice
+      else if(ty==='dia'){const [cx,cy]=at(k,rnd()<.5?-lo:hi-1),cells=[[cx,cy],[cx+1,cy],[cx,cy+1],[cx+1,cy+1]];
+        if(cells.every(([a,b])=>g[b][a]==='.')){const O=[2,3,1,0];cells.forEach(([a,b],j)=>{snap.push([a,b]);g[b][a]='#';sh[a+','+b]=['h',O[j]]})}} // slope diamond
+      else{const o=rnd()<.5?-lo:hi;put(k,o,'#');put(k+1,o,'#')}                                                             // pillar
+    });
+    // keep the segment passable: flood 2x2-clear blocks from near its start to near its end, else undo the hazards
+    const pas=(a,b)=>g[b][a]!=='#'&&g[b][a]!=='L'&&!sh[a+','+b],clr=(a,b)=>pas(a,b)&&pas(a+1,b)&&pas(a,b+1)&&pas(a+1,b+1);
+    const xs=[at(0,-lo)[0],at(L,hi)[0],at(0,hi)[0],at(L,-lo)[0]],ys=[at(0,-lo)[1],at(L,hi)[1],at(0,hi)[1],at(L,-lo)[1]];
+    const x0=Math.min(...xs)-1,x1=Math.max(...xs)+1,y0=Math.min(...ys)-1,y1=Math.max(...ys)+1,tt=(a,b)=>(a-x)*DX[dir]+(b-y)*DY[dir];
+    const seen=new Set(),q=[];
+    for(let b=y0;b<=y1;b++)for(let a=x0;a<=x1;a++){const t=tt(a,b);if(t>=w-1&&t<=w&&clr(a,b)){seen.add(a+','+b);q.push([a,b])}}
+    let okk=false;
+    for(let i=0;i<q.length&&!okk;i++){const [a,b]=q[i];if(tt(a,b)>=L-w-1){okk=true;break}
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy,key=na+','+nb;if(na>=x0&&na<=x1&&nb>=y0&&nb<=y1&&!seen.has(key)&&clr(na,nb)){seen.add(key);q.push([na,nb])}}}
+    if(!okk)snap.forEach(([a,b])=>{g[b][a]='.';delete sh[a+','+b]});
+  };
+  for(let seg=0;seg<400;seg++){
+    const r=Math.min(1,seg/45),w=seg<3?6:Math.max(4,6-Math.floor(seg/14));let L=2*w+8+((rnd()*8)|0),d=null;
+    if(seg===0)d=dir;else{const opts=[(dir+1)%4,(dir+3)%4];if(rnd()<.5)opts.reverse();if(rnd()<.2)opts.push(dir);for(const o of opts)if(fits(o,w,L)){d=o;break}
+      if(d===null){L=2*w+6;for(const o of opts)if(fits(o,w,L)){d=o;break}}}
+    if(d===null)break;
+    dir=d;carve(dir,w,L);if(seg>=2)features(seg,r,w,L);
+    x+=DX[dir]*L;y+=DY[dir]*L;d0+=L;
+  }
+  for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)g[y+b][x+a]='G';
+  g[sy][sx]='S';
+  // safety net: if hazards ever cut the track off, move the goal to the furthest point you can actually reach
+  const pas=(a,b)=>g[b][a]!=='#'&&g[b][a]!=='L'&&!sh[a+','+b],clr=(a,b)=>pas(a,b)&&pas(a+1,b)&&pas(a,b+1)&&pas(a+1,b+1);
+  const seen=new Uint8Array(N*N),q=[];let st=[[sx,sy],[sx-1,sy],[sx,sy-1],[sx-1,sy-1]].find(([a,b])=>clr(a,b));
+  if(st){seen[st[1]*N+st[0]]=1;q.push(st)}
+  let far=st,reached=false;
+  for(let i=0;i<q.length;i++){const [a,b]=q[i];
+    if(dist[b*N+a]>dist[far[1]*N+far[0]])far=[a,b];
+    if([[a,b],[a+1,b],[a,b+1],[a+1,b+1]].some(([c,d])=>g[d][c]==='G'))reached=true;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy;if(na>0&&nb>0&&na<N-2&&nb<N-2&&!seen[nb*N+na]&&clr(na,nb)){seen[nb*N+na]=1;q.push([na,nb])}}}
+  if(!reached&&far){for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)g[y+b][x+a]='.';for(let b=0;b<2;b++)for(let a=0;a<2;a++)g[far[1]+b][far[0]+a]='G'}
+  return {rows:g.map(r=>r.join('')),sh,sa,dist,N};
+}
+function startEndless(seed){
+  curSeed=String(seed).slice(0,12)||randSeed();const G=genEndless(curSeed);
+  menuEl.hidden=true;mode='endless';cur={id:null,name:'Endless',rows:G.rows,sh:G.sh,sa:G.sa,dist:G.dist,N:G.N};
+  fullRun=false;total=0;deaths=0;load(0);
+}
+function openEndless(){
+  show('endless');document.getElementById('eseed').value=randSeed();
+  document.getElementById('ebest').textContent=pb.endBest?'Best distance: '+pb.endBest+' m':'No runs yet';
+}
+function endRun(done){
+  state='over';timer=1e9;
+  const d=Math.floor(score),prevBest=pb.endBest||0,nb=d>prevBest;
+  if(nb)pb.endBest=d;pb.endRuns=(pb.endRuns||0)+1;savePB();
+  banner.innerHTML='<b>'+(done?'Track complete!':'Run over')+'</b><small class="lvn">Endless \u00b7 seed '+esc(curSeed)+'</small><small>Distance '+d+' m'+(nb&&d>0?' \u00b7 New best!':' \u00b7 Best '+Math.max(d,prevBest)+' m')+'<br>Time '+fmt(lt)+'</small><div class="bb"><button data-b="again">Retry seed (R)</button><button class="pri" data-b="new">New seed (Enter)</button><button data-b="menu">Menu</button></div>';
+  banner.style.opacity=1;
+}
+
+let db=null,uid=null,usersNS=null;
+(async()=>{try{if(!window.claude)return;db=await claude.use('db');usersNS=await claude.use('user');if(usersNS)uid=await usersNS.id();if(db&&uid)syncPBs()}catch(e){db=null}})();
+async function lbPut(patch){
+  if(!db||!uid)return;
+  try{const ref=db.doc('lb/'+uid),sn=await ref.get(),d=sn.exists?sn.data():{};let ch=false;
+    for(const k in patch)if(patch[k]!=null&&(d[k]==null||patch[k]<d[k])){d[k]=patch[k];ch=true}
+    if(ch)await ref.set(d)}catch(e){}
+}
+function syncPBs(){const p={};LEVELS.forEach((_,i)=>{const t=pb.levels[LID[i]];if(t!=null)p[fld(i)]=rnd(t,3)});if(pb.run!=null)p.run3=rnd(pb.run,3);lbPut(p)}
+async function lbTop(field,n){
+  if(!db)return null;
+  try{const sn=await db.collection('lb').orderBy(field,'asc').limit(n).get();
+    const rows=sn.docs.map(d=>({id:d.id,t:d.data()[field]})).filter(r=>r.t!=null),names={};
+    if(usersNS&&rows.length){try{const ps=await usersNS.profiles(rows.map(r=>r.id));rows.forEach(r=>names[r.id]=ps[r.id]&&ps[r.id].name)}catch(e){}}
+    return rows.map(r=>({t:r.t,name:names[r.id]||'Player',me:r.id===uid}))}catch(e){return null}
+}
+function lbHTML(rows){
+  if(rows===null)return '<small>Leaderboard unavailable here. Sign in to view and post times.</small>';
+  if(!rows.length)return '<small>No times yet. Be the first!</small>';
+  return rows.map((r,i)=>'<div class="row'+(r.me?' me':'')+(r.rank?' sep':'')+'"><span>'+(r.rank||i+1)+'. '+esc(r.name)+'</span><b>'+fmt(r.t)+'</b></div>').join('');
+}
+// the board can lag behind a write you just made, so make sure your own time is shown
+function lbMerge(rows,t){
+  if(rows===null||!uid||t==null)return rows;
+  const i=rows.findIndex(r=>r.me);
+  if(i>=0){if(t<rows[i].t)rows[i].t=t}else rows.push({t,name:'You',me:true});
+  return rows.sort((a,b)=>a.t-b.t);
+}
+// level select side board: overall by default, the hovered level otherwise
+let sideTok=0;const sideCache={};
+async function sideLB(f,title){
+  const tok=++sideTok,b=document.getElementById('lvsideb');
+  document.getElementById('lvsidet').textContent=title;
+  if(sideCache[f])b.innerHTML=sideCache[f];else b.textContent='Loading…';
+  const h=lbHTML(await lbTop(f,8));sideCache[f]=h;if(tok===sideTok)b.innerHTML=h;
+}
+{const L=document.getElementById('lvlist');
+ L.addEventListener('mouseover',e=>{const b=e.target.closest('button[data-l]');if(b)sideLB(fld(+b.dataset.l),'Level '+(+b.dataset.l+1))});
+ L.addEventListener('mouseleave',()=>sideLB('run3','Overall'))}
+async function showLB(field){
+  show('lb');
+  document.getElementById('lbtabs').innerHTML=[['run3','Overall']].concat(LEVELS.map((_,i)=>[fld(i),'Lvl '+(i+1)])).map(t=>'<button data-lb="'+t[0]+'"'+(t[0]===field?' class="on"':'')+'>'+t[1]+'</button>').join('');
+  const body=document.getElementById('lbbody');body.textContent='Loading\u2026';
+  const rows=await lbTop(field,10);body.innerHTML=lbHTML(rows);
+}
+
+// ---- level editor
+const editorEl=document.getElementById('editor'),ec=document.getElementById('ec'),ex=ec.getContext('2d');
+let eg=[],eid=null,etool='#',epaint=false,eo={x:0,y:0,cs:30};
+const TOOLS=[['#','Wall'],['L','Lava'],['P','Speed pad'],['I','Ice'],['.','Erase'],['S','Start'],['G','Goal']],ECOL={'#':'#4a4d63','L':'#e8541a','P':'#c9a91c','I':'#8fd8ff','.':'#1e1e2a','S':'#1e1e2a','G':'#1e1e2a'};
+const sv=b=>'<svg viewBox="0 0 24 24" width="24" height="24">'+b+'</svg>';
+const ICONS={
+  '#':sv('<rect x="2" y="2" width="20" height="20" rx="2" fill="#4a4d63" stroke="#9a9fc0" stroke-width="1.5"/><path d="M2 9h20M2 16h20M9 2v7M15 9v7M9 16v6" stroke="#9a9fc0" stroke-width="1" fill="none"/>'),
+  'L':sv('<rect x="2" y="2" width="20" height="20" rx="2" fill="#e8541a"/><path d="M3 9q3-3 6 0t6 0t6 0M3 16q3-3 6 0t6 0t6 0" stroke="#ffd24a" stroke-width="1.8" fill="none" stroke-linecap="round"/>'),
+  'P':sv('<rect x="2" y="2" width="20" height="20" rx="2" fill="#b89a1a"/><rect x="5" y="5" width="14" height="14" rx="1" fill="#ffe250"/>'),
+  '.':sv('<g transform="rotate(-35 12 12)"><rect x="2" y="7" width="20" height="10" rx="2" fill="#f3b6c4" stroke="#fff" stroke-width="1.2"/><rect x="2" y="7" width="9" height="10" rx="2" fill="#e0607e"/></g>'),
+  'I':sv('<rect x="2" y="2" width="20" height="20" rx="2" fill="#8fd8ff"/><path d="M6 18L18 6M6 11l5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"/>'),
+  'S':sv('<rect x="3" y="3" width="18" height="18" rx="2" fill="#5ec8ff"/><rect x="16" y="5" width="3" height="14" fill="#0b2a3a"/>'),
+  'G':sv('<rect x="2" y="2" width="20" height="20" rx="2" fill="#2fd37a"/><rect x="6" y="6" width="12" height="12" rx="1" fill="none" stroke="#fff" stroke-width="1.5"/>')
+};
+document.getElementById('epal').innerHTML=TOOLS.map(t=>'<button data-t="'+t[0]+'" title="'+t[1]+'" aria-label="'+t[1]+'">'+ICONS[t[0]]+'</button>').join('');
+function newGrid(w,h,sg){const g=[];for(let y=0;y<h;y++){g.push([]);for(let x=0;x<w;x++)g[y].push(x===0||y===0||x===w-1||y===h-1?'#':'.')}if(sg){g[h>>1][2]='S';g[h>>1][w-3]='G'}return g}
+function markTool(){document.querySelectorAll('#epal button').forEach(b=>b.classList.toggle('on',b.dataset.t===etool));const sel=document.getElementById('eshape'),ok=etool==='#'||etool==='L';sel.disabled=!ok;sel.value=ok?toolShape[etool]:'f'}
+let eUndo=[],eshp={},eori=0,esa=0,eanc=0;
+// resize anchor: a 3x3 picker for which part of the level stays put when the size changes
+const ancEl=document.getElementById('eanc');
+ancEl.innerHTML=Array.from({length:9},(_,i)=>'<button data-anc="'+i+'"></button>').join('');
+function markAnc(){ancEl.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.anc===eanc))}
+markAnc();const toolShape={'#':'f','L':'f'},GLYPH=['\u25e4','\u25e5','\u25e2','\u25e3'];
+function eshpClean(){const o={};for(const k in eshp){const [x,y]=k.split(',').map(Number),v=eg[y]&&eg[y][x];if(v==='#'||v==='L')o[k]=eshp[k]}return o}
+function ePush(){eUndo.push({g:eg.map(r=>r.slice()),s:JSON.stringify(eshp),a:esa});if(eUndo.length>100)eUndo.shift()}
+function eUndoDo(){const u=eUndo.pop();if(u){eg=u.g;eshp=JSON.parse(u.s);esa=u.a||0;eRender()}}
+// save / load a level as a file
+let dlNS=null;(async()=>{try{if(window.claude)dlNS=await claude.use('downloads')}catch(e){}})();
+async function eExport(){
+  const rows=eValid();if(!rows)return;
+  const name=document.getElementById('ename').value.trim()||'Untitled';
+  if(!dlNS){eStat('File saving is not available here');return}
+  const data=JSON.stringify({game:'cube-runner',v:1,name,rows,sh:eshpClean(),sa:esa});
+  try{await dlNS.save({filename:(name.replace(/[^\w -]+/g,'').trim().replace(/ +/g,'-')||'level')+'.json',data});eStat('Saved to file')}
+  catch(e){eStat(e&&e.code==='declined'?'Save cancelled':'Could not save the file')}
+}
+document.getElementById('efile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d||d.game!=='cube-runner'||!Array.isArray(d.rows))throw 0;
+    const rows=d.rows.map(String),w=rows[0].length;
+    if(rows.length<3||rows.length>60||w<3||w>60||rows.some(r=>r.length!==w||/[^#.LPISG]/.test(r)))throw 0;
+    ePush();eg=rows.map(r=>r.split(''));eid=null;esa=(d.sa|0)&3;eshp={};
+    for(const k in d.sh||{}){const v=d.sh[k];if(/^\d+,\d+$/.test(k)&&Array.isArray(v)&&typeof v[0]==='string'&&v[0].length===1&&'qsh'.includes(v[0])&&v[1]>=0&&v[1]<4)eshp[k]=[v[0],v[1]|0]}
+    document.getElementById('ename').value=String(d.name||'Imported').slice(0,24);
+    document.getElementById('ew').value=w;document.getElementById('eh').value=rows.length;eRender();eStat('Imported as a new level');
+  }catch(err){eStat('That is not a valid Cube Runner level file')}
+});
+function eRot(){eori=(eori+1)%4;document.getElementById('erot').textContent=GLYPH[eori]}
+document.getElementById('eshape').addEventListener('change',e=>{if(etool==='#'||etool==='L')toolShape[etool]=e.target.value});
+function eStat(t){document.getElementById('estat').textContent=t}
+function openEditor(id){
+  if(id!==undefined){eUndo=[];eid=id;const c=id&&customs.find(c=>c.id===id);
+    eshp=c&&c.sh?JSON.parse(JSON.stringify(c.sh)):{};
+    esa=c?(c.sa||0):0;
+    eg=c?c.rows.map(r=>r.split('')):newGrid(20,12,true);document.getElementById('ename').value=c?c.name:'My level'}
+  document.getElementById('ew').value=eg[0].length;document.getElementById('eh').value=eg.length;
+  keys.left=keys.right=false;touches.clear();banner.style.opacity=0;banner.innerHTML='';
+  state='menu';menuEl.hidden=true;editorEl.hidden=false;markTool();eStat('');eRender();
+}
+function eRender(){
+  const r=ec.getBoundingClientRect();ec.width=r.width*dpr;ec.height=r.height*dpr;
+  ex.setTransform(dpr,0,0,dpr,0,0);
+  const rows=eg.length,cols=eg[0].length,cs=Math.min(40,(r.width-8)/cols,(r.height-8)/rows);
+  eo={x:(r.width-cs*cols)/2,y:(r.height-cs*rows)/2,cs};
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+    const v=eg[y][x],px=eo.x+x*cs,py=eo.y+y*cs;
+    const sh=eshp[x+','+y];if(sh&&(v==='#'||v==='L')){ex.fillStyle=ECOL['.'];ex.fillRect(px,py,cs,cs);ex.fillStyle=ECOL[v];ex.beginPath();polyOf(x,y,sh).forEach(([X,Y],i)=>{const qx=eo.x+X*cs,qy=eo.y+Y*cs;i?ex.lineTo(qx,qy):ex.moveTo(qx,qy)});ex.closePath();ex.fill()}else{ex.fillStyle=ECOL[v];ex.fillRect(px,py,cs,cs)}
+    if(v==='S'||v==='G'){ex.fillStyle=v==='S'?'#5ec8ff':'#2fd37a';const m=cs*.15;ex.fillRect(px+m,py+m,cs-2*m,cs-2*m);
+      if(v==='S'){const q=cs*.12,iw=cs-2*m-2*q;ex.fillStyle='#0b2a3a';const fr=[[px+cs-m-q,py+m+q,q,iw],[px+m+q,py+cs-m-q,iw,q],[px+m,py+m+q,q,iw],[px+m+q,py+m,iw,q]][esa];ex.fillRect(...fr)}}
+    ex.strokeStyle='#ffffff14';ex.strokeRect(px+.5,py+.5,cs-1,cs-1);
+  }
+}
+function ePaint(e,first){
+  const r=ec.getBoundingClientRect(),x=Math.floor((e.clientX-r.left-eo.x)/eo.cs),y=Math.floor((e.clientY-r.top-eo.y)/eo.cs);
+  if(y<0||x<0||y>=eg.length||x>=eg[0].length)return;
+  if(etool==='S'&&!(first&&eg[y][x]==='S'))eg.forEach(row=>row.forEach((v,i)=>{if(v==='S')row[i]='.'}));
+  if(etool==='S'&&first&&eg[y][x]==='S'){esa=(esa+1)%4;eRender();return}
+  const key=x+','+y,want=(etool==='#'||etool==='L')&&toolShape[etool]!=='f'?[toolShape[etool],eori]:undefined,same=JSON.stringify(want)===JSON.stringify(eshp[key]);
+  if(first&&eg[y][x]===etool&&etool!=='.'&&same){eg[y][x]='.';delete eshp[key];eRender();return}
+  if(eg[y][x]!==etool||!same){eg[y][x]=etool;if(want)eshp[key]=want;else delete eshp[key];eRender()}
+}
+ec.addEventListener('pointerdown',e=>{epaint=true;ec.setPointerCapture(e.pointerId);ePush();ePaint(e,true)});
+ec.addEventListener('pointermove',e=>{if(epaint)ePaint(e)});
+['pointerup','pointercancel'].forEach(n=>ec.addEventListener(n,()=>epaint=false));
+editorEl.addEventListener('pointerdown',e=>e.stopPropagation());
+addEventListener('resize',()=>{if(!editorEl.hidden)eRender()});
+function eValid(){
+  const flat=eg.flat(),ns=flat.filter(v=>v==='S').length,ng=flat.filter(v=>v==='G').length;
+  if(ns!==1){eStat('Place exactly one Start');return null}
+  if(ng<1){eStat('Place at least one Goal');return null}
+  return eg.map(r=>r.join(''));
+}
+editorEl.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.t){etool=b.dataset.t;markTool();eStat(etool==='S'?'Click the start tile again to rotate it':'');return}
+  if(b.dataset.anc!=null){eanc=+b.dataset.anc;markAnc();return}
+  const a=b.dataset.e,name=(document.getElementById('ename').value.trim()||'Untitled');
+  if(a==='rot')eRot();
+  else if(a==='export')eExport();
+  else if(a==='import')document.getElementById('efile').click();
+  else if(a==='back'){editorEl.hidden=true;showMenu(true)}
+  else if(a==='resize'){
+    const w=Math.max(6,Math.min(40,+document.getElementById('ew').value||20)),h=Math.max(6,Math.min(40,+document.getElementById('eh').value||12)),g=newGrid(w,h,false);
+    const oh=eg.length,ow=eg[0].length,ax=eanc%3,ay=(eanc/3)|0,ox=ax===0?0:ax===1?Math.floor((w-ow)/2):w-ow,oy=ay===0?0:ay===1?Math.floor((h-oh)/2):h-oh,ns={};
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const sx=x-ox,sy=y-oy;if(sx>=0&&sy>=0&&sx<ow&&sy<oh)g[y][x]=eg[sy][sx]}
+    for(const k in eshp){const [sx,sy]=k.split(',').map(Number),nx=sx+ox,ny=sy+oy;if(nx>=0&&ny>=0&&nx<w&&ny<h)ns[nx+','+ny]=eshp[k]}
+    ePush();eg=g;eshp=ns;eRender();eStat(eg.flat().includes('S')?'':'The start tile was cropped out. Place it again.')}
+  else if(a==='test'){const rows=eValid();if(rows){editorEl.hidden=true;mode='test';cur={id:null,name,rows,sh:eshpClean(),sa:esa};fullRun=false;total=0;deaths=0;load(0)}}
+  else if(a==='save'){const rows=eValid();if(!rows)return;
+    if(eid){const c=customs.find(c=>c.id===eid);if(c){const sh=eshpClean();if(c.rows.join()!==rows.join()||JSON.stringify(c.sh||{})!==JSON.stringify(sh)||(c.sa||0)!==esa){delete pb.cl[eid];delete pb.cg[eid];savePB()}c.name=name;c.rows=rows;c.sh=sh;c.sa=esa}}
+    else{eid='c'+Date.now().toString(36);customs.push({id:eid,name,rows,sh:eshpClean(),sa:esa})}
+    saveCustoms();eStat('Saved \u2713')}
+});
+load(0);showMenu();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
