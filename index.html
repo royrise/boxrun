@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Cube Runner</title>
+<title>boxrun.fun</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Bungee&display=swap">
 <style>
 :root{--bg:#f2f2f5;--fg:#1c1c24;--bar:#ffffffcc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -16,7 +16,7 @@ canvas{display:block;width:100%;height:100%}
 #hud span{color:#fff;text-shadow:0 2px 8px #000,0 0 3px #000;padding:4px 10px}
 #msg{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;opacity:.8;color:#fff;text-shadow:0 1px 4px #000}
 #time{font-family:Orbitron,sans-serif;font-variant-numeric:tabular-nums;font-size:clamp(22px,5vw,32px);font-weight:800;padding:0 18px!important}
-#hud{justify-content:center;padding-top:4vh}
+#hud{justify-content:center;padding-top:4vh;flex-direction:column;align-items:center;gap:0}
 #mn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;background:none!important;color:#fff!important;text-shadow:0 2px 8px #000;font-size:22px!important;line-height:1;padding:6px 12px!important}
 #hud button{pointer-events:auto;font:inherit;color:var(--fg);background:var(--bar);border:0;padding:4px 10px;border-radius:8px;cursor:pointer}
 #menu{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(10,12,20,.9);color:#eef;padding:env(safe-area-inset-top,0px) 16px env(safe-area-inset-bottom,0px);overflow:auto}
@@ -56,6 +56,8 @@ canvas{display:block;width:100%;height:100%}
 .panel .lbt{font-weight:600;opacity:.85;margin-top:4px}
 .panel input{font:inherit;font-size:20px;text-align:center;letter-spacing:.12em;text-transform:uppercase;color:#eef;background:#1c1c28;border:1px solid #4a4d63;border-radius:10px;padding:10px}
 .panel button.pri{background:#1f9d5c;border-color:#2fd37a}
+.seg{display:flex}.panel .seg button{flex:1;padding:8px;font-size:15px;border-radius:0}.panel .seg button:first-child{border-radius:10px 0 0 10px}.panel .seg button:last-child{border-radius:0 10px 10px 0}
+#esub{font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:0!important}
 #gh{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;background:none!important;color:#fff!important;padding:4px 8px!important;line-height:0}
 #gh.off{opacity:.45}
 #gh.off::after{content:'';position:absolute;left:5px;right:5px;top:50%;border-top:2px solid #fff;transform:rotate(-45deg)}
@@ -90,10 +92,10 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hud"><span id="time"></span><button id="mn" aria-label="Menu">←</button><button id="gh" aria-label="Toggle PB ghost" title="PB ghost on/off (G)"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2 2-2.5-2-2.5 2-2-2z"/><circle cx="9.5" cy="11" r="1" fill="currentColor"/><circle cx="14.5" cy="11" r="1" fill="currentColor"/></svg></button></div>
+<div id="hud"><span id="time"></span><span id="esub"></span><button id="mn" aria-label="Menu">←</button><button id="gh" aria-label="Toggle PB ghost" title="PB ghost on/off (G)"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 21V11a7 7 0 0114 0v10l-2.5-2-2 2-2.5-2-2.5 2-2-2z"/><circle cx="9.5" cy="11" r="1" fill="currentColor"/><circle cx="14.5" cy="11" r="1" fill="currentColor"/></svg></button></div>
 <div id="banner"></div>
 <div id="menu">
- <div class="panel" id="p-main"><h1>CUBE RUNNER</h1><p class="sub">Steer. Survive. Don’t touch the lava.</p><div class="icons">
+ <div class="panel" id="p-main"><h1>boxrun.fun</h1><p class="sub">Steer. Survive. Don’t touch the lava.</p><div class="icons">
  <div class="icol">
   <button class="ib" data-a="play" aria-label="Play" data-tip="Play: start a full run from Level 1"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg></button>
   <button class="ib" data-a="levels" aria-label="Level Select" data-tip="Level Select: pick a level and see its leaderboard"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></button>
@@ -112,7 +114,7 @@ canvas{display:block;width:100%;height:100%}
  <div class="panel wide" id="p-levels" hidden><h2>Level Select</h2><div id="lvwrap"><div id="lvleft"><div id="lvlist"></div><small id="lvnote"></small></div><div id="lvside"><div class="lbt" id="lvsidet">Overall</div><div id="lvsideb"></div></div></div><button data-a="back">Back</button></div>
  <div class="panel wide" id="p-comm" hidden><h2>Community levels</h2><div><select id="csort" title="Sort levels"><option value="rel">Relevance</option><option value="up">Most upvotes</option><option value="net">Top rated</option><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select></div><div id="clist"></div><small id="cnote"></small><button data-a="back">Back</button></div>
  <div class="panel" id="p-skins" hidden><h2>Skins</h2><div id="skinprev"></div><div class="lbt">Primary colour</div><div class="sw" id="swp"></div><div class="lbt">Secondary colour</div><div class="sw" id="sws"></div><small id="skinnote"></small><button data-a="back">Back</button></div>
- <div class="panel" id="p-endless" hidden><h2>Endless</h2><p class="sub">A random winding track. Go as far as you can. The same seed always gives the same track.</p><input id="eseed" maxlength="12" autocomplete="off" aria-label="Seed"><button data-a="eroll">Random seed</button><div id="ebest"></div><button data-a="estart" class="pri">Start</button><button data-a="back">Back</button></div>
+ <div class="panel" id="p-endless" hidden><h2>Endless</h2><p class="sub">A random winding track. Go as far as you can. The same seed always gives the same track.</p><div class="seg" id="emode"><button data-a="emrand">Random seed</button><button data-a="emset">Set seed</button></div><input id="eseed" maxlength="12" autocomplete="off" aria-label="Seed" placeholder="Type a seed"><small id="enote"></small><div id="ebest"></div><button data-a="estart" class="pri">Start</button><button data-a="back">Back</button></div>
  <div class="panel" id="p-lb" hidden><h2>Leaderboard</h2><div id="lbtabs"></div><div id="lbbody"></div><button data-a="back">Back</button></div>
  <div class="panel" id="p-stats" hidden><h2>Statistics</h2><div id="statlist"></div><button data-a="back">Back</button></div>
 </div>
@@ -275,9 +277,9 @@ menuEl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)ret
   else if(d.cs)commCopy(d.cs);
   else if(d.cr)commRemove(d.cr);
   else if(d.lb)showLB(d.lb);
-  else{const a=d.a;if(a==='play')startLevel(0,true);else if(a==='levels'){buildLevels();show('levels')}else if(a==='stats'){buildStats();show('stats')}else if(a==='lb')showLB('run3');else if(a==='edit')openEditor(null);else if(a==='skins'){buildSkins();show('skins')}else if(a==='comm')showComm();else if(a==='endless')openEndless();else if(a==='eroll')document.getElementById('eseed').value=randSeed();else if(a==='estart')startEndless(document.getElementById('eseed').value.trim()||randSeed());else show('main')}});
+  else{const a=d.a;if(a==='play')startLevel(0,true);else if(a==='levels'){buildLevels();show('levels')}else if(a==='stats'){buildStats();show('stats')}else if(a==='lb')showLB('run3');else if(a==='edit')openEditor(null);else if(a==='skins'){buildSkins();show('skins')}else if(a==='comm')showComm();else if(a==='endless')openEndless();else if(a==='emrand'){pb.endSet=false;savePB();endUI()}else if(a==='emset'){pb.endSet=true;savePB();endUI()}else if(a==='estart')endStart();else show('main')}});
 menuEl.addEventListener('pointerdown',e=>e.stopPropagation());
-document.getElementById('banner').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(mode==='endless'){const k=b.dataset.b;if(k==='again')startEndless(curSeed);else if(k==='new')startEndless(randSeed());else showMenu();return}if(b.dataset.b==='again')again();else nextLevel()});
+document.getElementById('banner').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(mode==='endless'){const k=b.dataset.b;if(k==='again')startEndless(curSeed,curSet);else if(k==='new')endNew();else showMenu();return}if(b.dataset.b==='again')again();else nextLevel()});
 document.getElementById('banner').addEventListener('pointerdown',e=>e.stopPropagation());
 document.getElementById('mn').addEventListener('pointerdown',e=>{e.stopPropagation();showMenu()});
 // PB ghost on/off (the ghost is still recorded while hidden)
@@ -383,6 +385,7 @@ function update(dt){
   if(state==='menu')return;
   if(state==='play'){lt+=dt;gt+=dt;total+=dt;lastA=p.a}
   document.getElementById('time').textContent=mode==='endless'?Math.floor(score)+' m':(state==='win'?fmt:fmt1)(lt);
+  document.getElementById('esub').textContent=mode==='endless'?(curSet?'Set seed':'Random seed')+' \u00b7 '+curSeed:'';
   if(state==='play'){
     const turn=(keys.right?1:0)-(keys.left?1:0);
     // turning: if rotating would put a corner into a wall, push out; if that fails, cancel the turn
@@ -467,7 +470,7 @@ addEventListener('keydown',e=>{
   if(!editorEl.hidden&&e.target.tagName!=='INPUT'&&['z','r'].includes(e.key.toLowerCase())){e.key.toLowerCase()==='z'?eUndoDo():eRot();return}
   if(!editorEl.hidden||e.target.tagName==='INPUT')return;
   if(e.key.toLowerCase()==='g'&&!e.repeat){setGhost(pb.ghostOn===false);return}
-  if(state==='over'&&mode==='endless'){if(e.key==='Enter'){startEndless(randSeed());return}if(e.key.toLowerCase()==='r'){startEndless(curSeed);return}}
+  if(state==='over'&&mode==='endless'){if(e.key==='Enter'){endNew();return}if(e.key.toLowerCase()==='r'){startEndless(curSeed,curSet);return}}
   if(state==='win'){if(e.key==='Enter'){nextLevel();return}if(e.key.toLowerCase()==='r'&&!e.shiftKey){again();return}}
   if(e.key==='Escape'){showMenu();return}
   if(e.key.toLowerCase()==='r'&&!e.repeat){if(state==='play'||state==='dead'){if(state==='play'&&lt>3&&mode!=='test'){deaths++;pb.deaths=(pb.deaths||0)+1;savePB()}load(lvl,true);attempts++}return}
@@ -626,7 +629,7 @@ async function commRemove(key){
 document.getElementById('csort').addEventListener('change',e=>{commSort=e.target.value;renderComm()});
 
 // ---- endless mode: a seeded, winding track with hazards that get harder; score = distance along the track
-let curSeed='',score=0;
+let curSeed='',score=0,curSet=false;
 const randSeed=()=>Math.random().toString(36).slice(2,8).toUpperCase();
 function genEndless(seed){
   let h=2166136261;for(const c of seed){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}
@@ -638,40 +641,49 @@ function genEndless(seed){
     for(let k=w;k<=L+hi+2;k++)for(let o=-lo-2;o<=hi+2;o++){const cx=x+DX[d]*k+px*o,cy=y+DY[d]*k+py*o;if(!inb(cx,cy)||used[cy*N+cx])return false}return true};
   const carve=(d,w,L)=>{const lo=(w-1)>>1,hi=w-1-lo,px=-DY[d],py=DX[d];
     for(let k=-lo;k<=L+hi;k++)for(let o=-lo;o<=hi;o++){const cx=x+DX[d]*k+px*o,cy=y+DY[d]*k+py*o,i=cy*N+cx;g[cy][cx]='.';used[i]=1;const v=d0+Math.max(0,Math.min(L,k));if(v>dist[i])dist[i]=v}};
-  const features=(seg,r,w,L)=>{
+  // r = difficulty (starts at .25, reaches 1 after 600 m of climbing). Obstacles start every 5-10 tiles along each straight and get closer together.
+  // Each obstacle is checked on its own and removed if it would make the corridor impassable.
+  const features=(r,w,L)=>{
     const lo=(w-1)>>1,hi=w-1-lo,px=-DY[dir],py=DX[dir],at=(k,o)=>[x+DX[dir]*k+px*o,y+DY[dir]*k+py*o];
-    const z0=w+2,zl=L-2*w-3,snap=[],put=(k,o,c)=>{const [cx,cy]=at(k,o);if(g[cy][cx]==='.'){snap.push([cx,cy]);g[cy][cx]=c}};
-    // one hazard per segment (two at higher difficulty); ice and pads never share a segment with other hazards
-    const pick=()=>{const t=rnd();return t<.28?'mine':t<.5?'bar':t<.66?'pad':t<.8?'ice':t<.92&&w>=5?'dia':'pil'};
-    const solo=ty=>ty==='ice'||ty==='pad',types=[pick()];
-    if(!solo(types[0])&&zl>=7&&r>.3){for(let tr=0;tr<6;tr++){const t2=pick();if(!solo(t2)&&t2!==types[0]){types.push(t2);break}}}
-    types.forEach((ty,i)=>{
-      const k=z0+Math.floor((i+rnd()*.6)*zl/types.length);
-      if(ty==='mine'){for(let n=0,m=1+((r*3)|0);n<m;n++)put(k+3*n,-lo+((rnd()*w)|0),'L')}                                  // lava mines
-      else if(ty==='bar'){const go=-lo+((rnd()*(w-2))|0),th=r>.6?2:1;for(let q=0;q<th;q++)for(let o=-lo;o<=hi;o++)if(o<go||o>go+2)put(k+q,o,'L')} // lava bar with a gap
-      else if(ty==='pad'){for(let q=0;q<3;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'P')}                                       // speed pads
-      else if(ty==='ice'){const len=4+((rnd()*3)|0);for(let q=0;q<len;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'I')}           // ice
-      else if(ty==='dia'){const [cx,cy]=at(k,rnd()<.5?-lo:hi-1),cells=[[cx,cy],[cx+1,cy],[cx,cy+1],[cx+1,cy+1]];
-        if(cells.every(([a,b])=>g[b][a]==='.')){const O=[2,3,1,0];cells.forEach(([a,b],j)=>{snap.push([a,b]);g[b][a]='#';sh[a+','+b]=['h',O[j]]})}} // slope diamond
-      else{const o=rnd()<.5?-lo:hi;put(k,o,'#');put(k+1,o,'#')}                                                             // pillar
-    });
-    // keep the segment passable: flood 2x2-clear blocks from near its start to near its end, else undo the hazards
+    const z0=w+2,zl=L-2*w-4,end=z0+zl,snap=[],put=(k,o,c)=>{const [cx,cy]=at(k,o);if(g[cy][cx]==='.'){snap.push([cx,cy]);g[cy][cx]=c}};
     const pas=(a,b)=>g[b][a]!=='#'&&g[b][a]!=='L'&&!sh[a+','+b],clr=(a,b)=>pas(a,b)&&pas(a+1,b)&&pas(a,b+1)&&pas(a+1,b+1);
     const xs=[at(0,-lo)[0],at(L,hi)[0],at(0,hi)[0],at(L,-lo)[0]],ys=[at(0,-lo)[1],at(L,hi)[1],at(0,hi)[1],at(L,-lo)[1]];
     const x0=Math.min(...xs)-1,x1=Math.max(...xs)+1,y0=Math.min(...ys)-1,y1=Math.max(...ys)+1,tt=(a,b)=>(a-x)*DX[dir]+(b-y)*DY[dir];
-    const seen=new Set(),q=[];
-    for(let b=y0;b<=y1;b++)for(let a=x0;a<=x1;a++){const t=tt(a,b);if(t>=w-1&&t<=w&&clr(a,b)){seen.add(a+','+b);q.push([a,b])}}
-    let okk=false;
-    for(let i=0;i<q.length&&!okk;i++){const [a,b]=q[i];if(tt(a,b)>=L-w-1){okk=true;break}
-      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy,key=na+','+nb;if(na>=x0&&na<=x1&&nb>=y0&&nb<=y1&&!seen.has(key)&&clr(na,nb)){seen.add(key);q.push([na,nb])}}}
-    if(!okk)snap.forEach(([a,b])=>{g[b][a]='.';delete sh[a+','+b]});
+    const passable=()=>{
+      const seen=new Set(),q=[];
+      for(let b=y0;b<=y1;b++)for(let a=x0;a<=x1;a++){const t=tt(a,b);if(t>=w-1&&t<=w&&clr(a,b)){seen.add(a+','+b);q.push([a,b])}}
+      for(let i=0;i<q.length;i++){const [a,b]=q[i];if(tt(a,b)>=L-w-1)return true;
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const na=a+dx,nb=b+dy,key=na+','+nb;if(na>=x0&&na<=x1&&nb>=y0&&nb<=y1&&!seen.has(key)&&clr(na,nb)){seen.add(key);q.push([na,nb])}}}
+      return false;
+    };
+    const pick=()=>{
+      if(r>.6&&rnd()<.5)return rnd()<.5?'bar':'mine';
+      const t=rnd();return t<.30?'mine':t<.56?'bar':t<.66?'pad':t<.76?'ice':t<.86&&w>=5?'dia':'pil';
+    };
+    const smin=Math.max(3,5-Math.round(r*2)),smax=Math.max(smin+2,10-Math.round(r*4));
+    const place=(ty,k)=>{                                     // returns how many tiles along the track it uses
+      if(ty==='mine'){const m=1+((r*5)|0);for(let n=0;n<m&&k+3*n<=end;n++)put(k+3*n,-lo+((rnd()*w)|0),'L');return 3*m}
+      if(ty==='bar'){const gs=r>.8?2:3,th=r>.6?2:1,go=-lo+((rnd()*(w-gs+1))|0);
+        const bar=(kk,g0)=>{for(let q=0;q<th;q++)for(let o=-lo;o<=hi;o++)if(o<g0||o>g0+gs-1)put(kk+q,o,'L')};
+        bar(k,go);if(r>.5&&k+6<=end){bar(k+6,go<=-lo+((w-gs)>>1)?hi-gs+1:-lo);return 7}return th}   // second bar, gap on the other side = slalom
+      if(ty==='pad'){for(let q=0;q<3;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'P');return r<.9?8:3}
+      if(ty==='ice'){const len=4+((rnd()*3)|0);for(let q=0;q<len;q++)for(let o=-lo;o<=hi;o++)put(k+q,o,'I');return len+8}
+      if(ty==='dia'){const [cx,cy]=at(k,rnd()<.5?-lo:hi-1),cells=[[cx,cy],[cx+1,cy],[cx,cy+1],[cx+1,cy+1]];
+        if(cells.every(([a,b])=>g[b][a]==='.')){const O=[2,3,1,0];cells.forEach(([a,b],j)=>{snap.push([a,b]);g[b][a]='#';sh[a+','+b]=['h',O[j]]})}return 2}
+      const o=rnd()<.5?-lo:hi,oo=o===-lo?hi:-lo;put(k,o,'#');put(k+1,o,'#');if(r>.5&&k+4<=end){put(k+3,oo,'#');put(k+4,oo,'#');return 5}return 2;
+    };
+    for(let k=z0+((rnd()*3)|0);k<=end;){
+      const mark=snap.length,span=place(pick(),k);
+      if(!passable())snap.splice(mark).forEach(([a,b])=>{g[b][a]='.';delete sh[a+','+b]});
+      k+=Math.max(span,smin)+((rnd()*(smax-smin+1))|0);
+    }
   };
   for(let seg=0;seg<400;seg++){
-    const r=Math.min(1,seg/45),w=seg<3?6:Math.max(4,6-Math.floor(seg/14));let L=2*w+8+((rnd()*8)|0),d=null;
+    const r=Math.min(1,.25+.75*d0/900),w=d0<400?5:4;let L=2*w+18+((rnd()*10)|0),d=null;
     if(seg===0)d=dir;else{const opts=[(dir+1)%4,(dir+3)%4];if(rnd()<.5)opts.reverse();if(rnd()<.2)opts.push(dir);for(const o of opts)if(fits(o,w,L)){d=o;break}
-      if(d===null){L=2*w+6;for(const o of opts)if(fits(o,w,L)){d=o;break}}}
+      if(d===null){L=2*w+10;for(const o of opts)if(fits(o,w,L)){d=o;break}}}
     if(d===null)break;
-    dir=d;carve(dir,w,L);if(seg>=2)features(seg,r,w,L);
+    dir=d;carve(dir,w,L);features(r,w,L);
     x+=DX[dir]*L;y+=DY[dir]*L;d0+=L;
   }
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)g[y+b][x+a]='G';
@@ -688,20 +700,33 @@ function genEndless(seed){
   if(!reached&&far){for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)g[y+b][x+a]='.';for(let b=0;b<2;b++)for(let a=0;a<2;a++)g[far[1]+b][far[0]+a]='G'}
   return {rows:g.map(r=>r.join('')),sh,sa,dist,N};
 }
-function startEndless(seed){
-  curSeed=String(seed).slice(0,12)||randSeed();const G=genEndless(curSeed);
+function startEndless(seed,isSet){
+  curSet=!!isSet;curSeed=String(seed).slice(0,12)||randSeed();const G=genEndless(curSeed);
   menuEl.hidden=true;mode='endless';cur={id:null,name:'Endless',rows:G.rows,sh:G.sh,sa:G.sa,dist:G.dist,N:G.N};
   fullRun=false;total=0;deaths=0;load(0);
 }
+function endUI(){
+  const set=!!pb.endSet;
+  document.querySelectorAll('#emode button').forEach(b=>b.classList.toggle('on',(b.dataset.a==='emset')===set));
+  document.getElementById('eseed').hidden=!set;
+  document.getElementById('enote').textContent=set?'The same seed always gives the same track. These runs are labelled "set seed".':'A brand new random track every run.';
+}
+function endStart(){
+  if(pb.endSet){const v=document.getElementById('eseed').value.trim().toUpperCase();
+    if(!v){document.getElementById('enote').textContent='Type a seed first.';return}
+    pb.endSeed=v;savePB();startEndless(v,true)}
+  else startEndless(randSeed(),false);
+}
+function endNew(){if(curSet){showMenu();openEndless()}else startEndless(randSeed(),false)}
 function openEndless(){
-  show('endless');document.getElementById('eseed').value=randSeed();
+  show('endless');endUI();document.getElementById('eseed').value=pb.endSeed||'';
   document.getElementById('ebest').textContent=pb.endBest?'Best distance: '+pb.endBest+' m':'No runs yet';
 }
 function endRun(done){
   state='over';timer=1e9;
   const d=Math.floor(score),prevBest=pb.endBest||0,nb=d>prevBest;
   if(nb)pb.endBest=d;pb.endRuns=(pb.endRuns||0)+1;savePB();
-  banner.innerHTML='<b>'+(done?'Track complete!':'Run over')+'</b><small class="lvn">Endless \u00b7 seed '+esc(curSeed)+'</small><small>Distance '+d+' m'+(nb&&d>0?' \u00b7 New best!':' \u00b7 Best '+Math.max(d,prevBest)+' m')+'<br>Time '+fmt(lt)+'</small><div class="bb"><button data-b="again">Retry seed (R)</button><button class="pri" data-b="new">New seed (Enter)</button><button data-b="menu">Menu</button></div>';
+  banner.innerHTML='<b>'+(done?'Track complete!':'Run over')+'</b><small class="lvn">Endless \u00b7 '+(curSet?'set seed ':'random seed ')+esc(curSeed)+'</small><small>Distance '+d+' m'+(nb&&d>0?' \u00b7 New best!':' \u00b7 Best '+Math.max(d,prevBest)+' m')+'<br>Time '+fmt(lt)+'</small><div class="bb"><button data-b="again">Retry seed (R)</button><button class="pri" data-b="new">'+(curSet?'Change seed':'New seed')+' (Enter)</button><button data-b="menu">Menu</button></div>';
   banner.style.opacity=1;
 }
 
@@ -783,7 +808,7 @@ async function eExport(){
   const rows=eValid();if(!rows)return;
   const name=document.getElementById('ename').value.trim()||'Untitled';
   if(!dlNS){eStat('File saving is not available here');return}
-  const data=JSON.stringify({game:'cube-runner',v:1,name,rows,sh:eshpClean(),sa:esa});
+  const data=JSON.stringify({game:'boxrun.fun',v:1,name,rows,sh:eshpClean(),sa:esa});
   try{await dlNS.save({filename:(name.replace(/[^\w -]+/g,'').trim().replace(/ +/g,'-')||'level')+'.json',data});eStat('Saved to file')}
   catch(e){eStat(e&&e.code==='declined'?'Save cancelled':'Could not save the file')}
 }
@@ -791,14 +816,14 @@ document.getElementById('efile').addEventListener('change',async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   try{
     const d=JSON.parse(await f.text());
-    if(!d||d.game!=='cube-runner'||!Array.isArray(d.rows))throw 0;
+    if(!d||d.game!=='boxrun.fun'&&d.game!=='cube-runner'||!Array.isArray(d.rows))throw 0;
     const rows=d.rows.map(String),w=rows[0].length;
     if(rows.length<3||rows.length>60||w<3||w>60||rows.some(r=>r.length!==w||/[^#.LPISG]/.test(r)))throw 0;
     ePush();eg=rows.map(r=>r.split(''));eid=null;esa=(d.sa|0)&3;eshp={};
     for(const k in d.sh||{}){const v=d.sh[k];if(/^\d+,\d+$/.test(k)&&Array.isArray(v)&&typeof v[0]==='string'&&v[0].length===1&&'qsh'.includes(v[0])&&v[1]>=0&&v[1]<4)eshp[k]=[v[0],v[1]|0]}
     document.getElementById('ename').value=String(d.name||'Imported').slice(0,24);
     document.getElementById('ew').value=w;document.getElementById('eh').value=rows.length;eRender();eStat('Imported as a new level');
-  }catch(err){eStat('That is not a valid Cube Runner level file')}
+  }catch(err){eStat('That is not a valid boxrun.fun level file')}
 });
 function eRot(){eori=(eori+1)%4;document.getElementById('erot').textContent=GLYPH[eori]}
 document.getElementById('eshape').addEventListener('change',e=>{if(etool==='#'||etool==='L')toolShape[etool]=e.target.value});
