@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <link rel="icon" type="image/png" href="favicon.png">
-</head>
-<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>boxrun.fun</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Bungee&display=swap">
 <style>
@@ -125,7 +123,7 @@ canvas{display:block;width:100%;height:100%}
 <div id="editor" hidden>
  <div id="etools"><input id="ename" maxlength="24" placeholder="Level name" value="My level"><span id="epal"></span>
   <input id="ew" type="number" min="6" max="40" title="Width"><span>×</span><input id="eh" type="number" min="6" max="40" title="Height">
-  <select id="eshape" title="Block shape"><option value="f">Full</option><option value="q">Quarter</option><option value="s">Quarter slope</option><option value="h">Half slope</option></select><button data-e="rot" id="erot" title="Rotate shape (R)">◤</button><span id="eanc" title="Resize anchor: the highlighted square is the part of the level that stays put"></span><button data-e="resize">Resize</button><button data-e="test">▶ Test</button><button data-e="save">Save</button><button data-e="export" title="Save this level to a file">Export</button><button data-e="import" title="Load a level file">Import</button><input type="file" id="efile" accept=".json,application/json" hidden><button data-e="back">Back</button><span id="estat"></span></div>
+  <select id="eshape" title="Block shape"><option value="f">Full</option><option value="q">Quarter</option><option value="s">Quarter slope</option><option value="h">Half slope</option></select><button data-e="rot" id="erot" title="Rotate shape (R)">◤</button><span id="eanc" title="Resize anchor: the highlighted square is the part of the level that stays put"></span><button data-e="resize">Resize</button><button data-e="test">▶ Test</button><button data-e="new" title="Start a new empty level">New</button><button data-e="save">Save</button><button data-e="export" title="Save this level to a file">Export</button><button data-e="import" title="Load a level file">Import</button><input type="file" id="efile" accept=".json,application/json" hidden><button data-e="back">Back</button><span id="estat"></span></div>
  <canvas id="ec"></canvas>
 </div>
 <script>
@@ -232,9 +230,14 @@ function resize(){dpr=window.devicePixelRatio||1;W=innerWidth;Hh=innerHeight;cv.
 addEventListener('resize',resize);resize();
 
 let lvl=0,grid,p,cp,state='play',timer=0,deaths=0,t=0,lt=0,total=0,attempts=1,wasIce=false,slideA=0,lastA=0;
+// storage: every write is read back, so a blocked or full browser store is reported instead of silently losing levels
+const store={ok:true,
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v);if(localStorage.getItem(k)!==v)throw 0;return true}catch(e){store.ok=false;return false}}};
+store.set('boxrunCheck','1');
 let pb={levels:[],run:null};
-try{const s=localStorage.getItem('cubeRunnerPB');if(s)pb=Object.assign(pb,JSON.parse(s))}catch(e){}
-function savePB(){try{localStorage.setItem('cubeRunnerPB',JSON.stringify(pb))}catch(e){}}
+try{const s=store.get('cubeRunnerPB');if(s)pb=Object.assign(pb,JSON.parse(s))}catch(e){}
+function savePB(){return store.set('cubeRunnerPB',JSON.stringify(pb))}
 function respawn(){if(state==='win'||state==='menu')return;p={x:cp.x,y:cp.y,a:cp.a};attempts++;wasIce=false;lt=0;state='play';rec=[[0,p.x,p.y,p.a]];lastRec=0;gt=0;gi=0}
 let fullRun=false;
 if(!pb.ghosts)pb.ghosts=[];
@@ -260,6 +263,7 @@ function buildLevels(){
   let h=LEVELS.map((_,i)=>'<button data-l="'+i+'">Level '+(i+1)+'<small>'+(pb.levels[LID[i]]!=null?'Best '+fmt(pb.levels[LID[i]]):'Not cleared')+'</small></button>').join('');
   h+='<h3 class="sec">Custom levels</h3>'+(customs.length?customs.map(c=>'<div class="crow"><button data-c="'+c.id+'">'+esc(c.name)+'<small>'+(pb.cl[c.id]!=null?'Best '+fmt(pb.cl[c.id]):'Not cleared')+'</small></button><button data-sh="'+c.id+'" title="Share to the community">Share</button><button data-e2="'+c.id+'">Edit</button><button data-x="'+c.id+'">\u2715</button></div>').join(''):'<small>None yet. Make one in the Level Editor.</small>');
   document.getElementById('lvlist').innerHTML=h;
+  lvNote(store.ok?'':'Warning: this browser is blocking saving, so custom levels and records are lost when you close the game. Use Export to keep levels.');
   sideLB('run3','Overall');
 }
 function buildStats(){
@@ -314,6 +318,7 @@ const keys={left:false,right:false};
 function load(n,keep){
   lvl=n;grid=(mode==='main'?LEVELS[n]:cur.rows).map(r=>r.split(''));
   shapes=(mode==='main'?LSH[n]:cur.sh)||{};
+  layers=(mode==='main'?null:cur.ov)||{};
   for(let y=0;y<grid.length;y++)for(let x=0;x<grid[y].length;x++)
     if(grid[y][x]==='S'){const a0=(mode==='main'?(LSA[n]||0):(cur.sa||0))*Math.PI/2;p={x:x+.5,y:y+.5,a:a0};cp={x:p.x,y:p.y,a:a0,k:null};grid[y][x]='.'}
   if(!keep)attempts=1;wasIce=false;score=0;state='play';lt=0;banner.style.opacity=0;banner.innerHTML='';rec=[[0,p.x,p.y,p.a]];lastRec=0;gt=0;ghost=ghostOf()||null;gi=0;
@@ -334,54 +339,52 @@ function fillTile(x,y){
   const sh=shapes[x+','+y];if(!sh){ctx.fillRect(x*U,y*U,U,U);return}
   ctx.beginPath();polyOf(x,y,sh).forEach(([X,Y],i)=>i?ctx.lineTo(X*U,Y*U):ctx.moveTo(X*U,Y*U));ctx.closePath();ctx.fill();
 }
-function hits(px,py,a,tx,ty){
-  const c=Math.cos(a),s=Math.sin(a);
-  const ax=[[1,0],[0,1],[c,s],[-s,c]];
-  const pc=[[-H,-H],[H,-H],[H,H],[-H,H]].map(([u,v])=>[px+u*c-v*s,py+u*s+v*c]);
-  const tc=tilePoly(tx,ty);if(shapes[tx+','+ty])ax.push(...polyAxes(tc));
-  for(const [nx,ny] of ax){
-    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
-    for(const q of pc){const d=q[0]*nx+q[1]*ny;a0=Math.min(a0,d);a1=Math.max(a1,d)}
-    for(const q of tc){const d=q[0]*nx+q[1]*ny;b0=Math.min(b0,d);b1=Math.max(b1,d)}
-    if(a1<=b0+1e-6||b1<=a0+1e-6)return false;
-  }
-  return true;
+// tile pieces: the base piece (char + optional shape) plus layered partial wall/lava pieces in layers['x,y']=[[c,kind,orient],...]
+function piecesAt(x,y,types){
+  const key=x+','+y,r=[],c=(grid[y]&&grid[y][x])||'#';
+  if(c!=='.'&&(!types||types.includes(c)))r.push([c,polyOf(x,y,shapes[key])]);
+  const L=layers[key];
+  if(L)for(const [cc,k,o] of L)if(!types||types.includes(cc))r.push([cc,polyOf(x,y,[k,o])]);
+  return r;
 }
-function touching(px,py,a,types){
-  const x0=Math.floor(px-1),x1=Math.floor(px+1),y0=Math.floor(py-1),y1=Math.floor(py+1);
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
-    if(types.includes(tile(x,y))&&hits(px,py,a,x,y))return true;
-  return false;
-}
-// minimum push vector to get the cube out of a wall tile (null if not overlapping)
-function wallMTV(px,py,a,tx,ty){
+function pointIn(poly,x,y){let s=0;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],cr=(b[0]-a[0])*(y-a[1])-(b[1]-a[1])*(x-a[0]);if(cr!==0){const sg=Math.sign(cr);if(s&&sg!==s)return false;s=sg}}return true}
+const iceUnder=(x,y)=>piecesAt(Math.floor(x),Math.floor(y),['I']).some(([c,poly])=>pointIn(poly,x,y));
+// SAT: rotated cube vs a convex polygon. Returns true/false, or with mtv=true the minimum push vector (or null)
+function sat(px,py,a,poly,mtv){
   const c=Math.cos(a),s=Math.sin(a);
-  const ax=[[1,0],[0,1],[c,s],[-s,c]];
+  const ax=[[c,s],[-s,c]].concat(polyAxes(poly));
   const pc=[[-H,-H],[H,-H],[H,H],[-H,H]].map(([u,v])=>[px+u*c-v*s,py+u*s+v*c]);
-  const tc=tilePoly(tx,ty);if(shapes[tx+','+ty])ax.push(...polyAxes(tc));
   let best=1e9,bn=null;
   for(const [nx,ny] of ax){
     let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;
     for(const q of pc){const d=q[0]*nx+q[1]*ny;a0=Math.min(a0,d);a1=Math.max(a1,d)}
-    for(const q of tc){const d=q[0]*nx+q[1]*ny;b0=Math.min(b0,d);b1=Math.max(b1,d)}
+    for(const q of poly){const d=q[0]*nx+q[1]*ny;b0=Math.min(b0,d);b1=Math.max(b1,d)}
     const o=Math.min(a1,b1)-Math.max(a0,b0);
-    if(o<=1e-6)return null;
+    if(o<=1e-6)return mtv?null:false;
     if(o<best){best=o;const dir=(a0+a1)/2<(b0+b1)/2?-1:1;bn=[nx*dir,ny*dir]}
   }
-  return [bn[0]*(best+1e-4),bn[1]*(best+1e-4)];
+  return mtv?[bn[0]*(best+1e-4),bn[1]*(best+1e-4)]:true;
+}
+function touching(px,py,a,types){
+  const x0=Math.floor(px-1),x1=Math.floor(px+1),y0=Math.floor(py-1),y1=Math.floor(py+1);
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
+    for(const [c,poly] of piecesAt(x,y,types))if(sat(px,py,a,poly,false))return true;
+  return false;
 }
 // push the cube out of any walls it overlaps; returns true if it ends up clear
 function resolve(){
   for(let i=0;i<6;i++){
     let moved=false;
-    for(let y=Math.floor(p.y-1);y<=Math.floor(p.y+1);y++)for(let x=Math.floor(p.x-1);x<=Math.floor(p.x+1);x++){
-      if(tile(x,y)!=='#')continue;
-      const m=wallMTV(p.x,p.y,p.a,x,y);
-      if(m){p.x+=m[0];p.y+=m[1];moved=true}
-    }
+    for(let y=Math.floor(p.y-1);y<=Math.floor(p.y+1);y++)for(let x=Math.floor(p.x-1);x<=Math.floor(p.x+1);x++)
+      for(const [c,poly] of piecesAt(x,y,['#'])){const m=sat(p.x,p.y,p.a,poly,true);if(m){p.x+=m[0];p.y+=m[1];moved=true}}
     if(!moved)return true;
   }
   return !touching(p.x,p.y,p.a,['#']);
+}
+function drawOv(c,poly,x,y){
+  ctx.beginPath();poly.forEach(([X,Y],i)=>i?ctx.lineTo(X*U,Y*U):ctx.moveTo(X*U,Y*U));ctx.closePath();
+  if(c==='#')ctx.fillStyle='#4a4d63';else{const g=.5+.5*Math.sin(t*4+x+y);ctx.fillStyle=`rgb(${230+20*g|0},${70+50*g|0},20)`}
+  ctx.fill();
 }
 function update(dt){
   t+=dt;
@@ -400,7 +403,7 @@ function update(dt){
     // moving: small substeps, then push out of walls. Removing the part of the motion
     // that points into the wall leaves speed * cos(angle to wall) along it, so a
     // shallower approach slides faster and a head-on approach barely moves.
-    const onIce=tile(Math.floor(p.x),Math.floor(p.y))==='I';if(onIce&&!wasIce)slideA=lastA;wasIce=onIce;const md=onIce?slideA:p.a; // on ice you keep sliding the way you entered, but can still rotate
+    const onIce=iceUnder(p.x,p.y);if(onIce&&!wasIce)slideA=lastA;wasIce=onIce;const md=onIce?slideA:p.a; // on ice you keep sliding the way you entered, but can still rotate
     const iceF=onIce?(1+Math.cos(p.a-slideA))/2:1; // on ice, turning away from your slide direction costs speed
     const dist=SPEED*iceF*(touching(p.x,p.y,p.a,['P'])?1.5:1)*dt, n=Math.max(1,Math.ceil(dist/0.04)), st=dist/n;
     for(let i=0;i<n;i++){
@@ -441,6 +444,7 @@ function draw(){
         ctx.fillStyle='#b89a1a';ctx.fillRect(...pad(3));ctx.fillStyle='rgba(255,226,80,'+a+')';ctx.fillRect(...pad(6))}
       
     }
+    const OV=layers[x+','+y];if(OV)for(const [cc,kk,oo] of OV)drawOv(cc,polyOf(x,y,[kk,oo]),x,y);
   }
   const labs=mode==='main'&&lvl===0?TUT.labels:cur&&cur.labels;
   if(labs){
@@ -484,7 +488,7 @@ const touches=new Map();
 function sync(){let l=false,r=false;touches.forEach(v=>v?r=true:l=true);keys.left=l;keys.right=r}
 addEventListener('pointerdown',e=>{touches.set(e.pointerId,e.clientX>W/2);sync()});
 ['pointerup','pointercancel'].forEach(n=>addEventListener(n,e=>{touches.delete(e.pointerId);sync()}));
-let mode='main',cur=null,shapes={};
+let mode='main',cur=null,shapes={},layers={};
 if(!pb.cl)pb.cl={};if(!pb.cg)pb.cg={};
 // the tutorial became Level 1: shift saved levels/ghosts down one and retire old-format run times
 if(!pb.v){pb.levels.unshift(null);pb.ghosts.unshift(null);pb.run=null;pb.v=2}
@@ -494,8 +498,8 @@ if(pb.v<4){if(Array.isArray(pb.levels)){const o={},gh={};[0,1,2].forEach(i=>{if(
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const bestOf=()=>mode==='main'?pb.levels[LID[lvl]]:mode==='custom'?pb.cl[cur.id]:null;
 const ghostOf=()=>mode==='main'?pb.ghosts[LID[lvl]]:mode==='custom'?pb.cg[cur.id]:null;
-let customs=[];try{customs=JSON.parse(localStorage.getItem('cubeRunnerCustom')||'[]')}catch(e){}
-function saveCustoms(){try{localStorage.setItem('cubeRunnerCustom',JSON.stringify(customs))}catch(e){}}
+let customs=[];try{customs=JSON.parse(store.get('cubeRunnerCustom')||'[]')}catch(e){}
+function saveCustoms(){return store.set('cubeRunnerCustom',JSON.stringify(customs))}
 // tutorial: a walled hall with one of each block type, each explained by a sign
 function makeTutorial(){
   const W=48,H=11,g=[];
@@ -553,6 +557,14 @@ function pickSkin(k,i){const c=COLORS[i];if(!c.u(skinStats())){buildSkins('Locke
 // ---- community levels: shared in db as lv/<author> = {levels:{id:{...}}} and vt/<voter> = {v:{levelKey:1|-1}}
 let commList=[],commSort='rel',myVotes={};
 const lvNote=t=>{const e=document.getElementById('lvnote');if(e)e.textContent=t||''},cNote=t=>{document.getElementById('cnote').textContent=t||''};
+function cleanOv(o,rows){
+  const r={},w=rows[0].length,h=rows.length;
+  try{const s0=typeof o==='string'?JSON.parse(o):(o||{});
+    for(const k in s0){const m=/^(\d+),(\d+)$/.exec(k);if(!m||+m[1]>=w||+m[2]>=h||!'#LPIG'.includes(rows[+m[2]][+m[1]]))continue;
+      const L=(Array.isArray(s0[k])?s0[k]:[]).slice(0,3).filter(v=>Array.isArray(v)&&(v[0]==='#'||v[0]==='L')&&typeof v[1]==='string'&&v[1].length===1&&'qsh'.includes(v[1])&&v[2]>=0&&v[2]<4).map(v=>[v[0],v[1],v[2]|0]);
+      if(L.length)r[k]=L}}catch(e){}
+  return r;
+}
 function cleanLvl(L){
   try{
     const rows=(L.rows||[]).map(String),w=rows[0].length;
@@ -560,7 +572,7 @@ function cleanLvl(L){
     if((rows.join('').match(/S/g)||[]).length!==1||!rows.join('').includes('G'))return null;
     const sh={},s0=typeof L.sh==='string'?JSON.parse(L.sh):(L.sh||{});
     for(const k in s0){const v=s0[k];if(/^\d+,\d+$/.test(k)&&Array.isArray(v)&&typeof v[0]==='string'&&v[0].length===1&&'qsh'.includes(v[0])&&v[1]>=0&&v[1]<4)sh[k]=[v[0],v[1]|0]}
-    return {name:String(L.name||'Untitled').slice(0,24),rows,sh,sa:(L.sa|0)&3,at:+L.at||0};
+    return {name:String(L.name||'Untitled').slice(0,24),rows,sh,ov:cleanOv(L.ov,rows),sa:(L.sa|0)&3,at:+L.at||0};
   }catch(e){return null}
 }
 async function commLoad(){
@@ -604,7 +616,7 @@ async function commShare(id){
     const ref=db.doc('lv/'+uid),sn=await ref.get(),d=sn.exists?sn.data():{};d.levels=d.levels||{};
     const prev=d.levels[id];
     if(!prev&&Object.keys(d.levels).length>=20){lvNote('You can share up to 20 levels. Remove one first.');return}
-    d.levels[id]={name:c.name,rows:c.rows,sh:JSON.stringify(c.sh||{}),sa:c.sa||0,at:prev?prev.at:Date.now()};
+    d.levels[id]={name:c.name,rows:c.rows,sh:JSON.stringify(c.sh||{}),ov:JSON.stringify(c.ov||{}),sa:c.sa||0,at:prev?prev.at:Date.now()};
     await ref.set(d);lvNote(prev?'Updated your shared copy of "'+c.name+'".':'"'+c.name+'" is now shared. Find it under Community levels.');
   }catch(e){lvNote('Could not share the level.')}
 }
@@ -618,11 +630,11 @@ async function commVote(key,val){
 }
 function startComm(key){
   const l=commList.find(x=>x.key===key);if(!l)return;
-  menuEl.hidden=true;mode='custom';cur={id:'cm_'+key,name:l.name,rows:l.rows,sh:l.sh,sa:l.sa};fullRun=false;total=0;deaths=0;load(0);
+  menuEl.hidden=true;mode='custom';cur={id:'cm_'+key,name:l.name,rows:l.rows,sh:l.sh,ov:l.ov,sa:l.sa};fullRun=false;total=0;deaths=0;load(0);
 }
 function commCopy(key){
   const l=commList.find(x=>x.key===key);if(!l)return;
-  customs.push({id:'c'+Date.now().toString(36),name:l.name,rows:l.rows.slice(),sh:JSON.parse(JSON.stringify(l.sh)),sa:l.sa});saveCustoms();cNote('Saved "'+l.name+'" to My levels.');
+  customs.push({id:'c'+Date.now().toString(36),name:l.name,rows:l.rows.slice(),sh:JSON.parse(JSON.stringify(l.sh)),ov:JSON.parse(JSON.stringify(l.ov||{})),sa:l.sa});saveCustoms();cNote('Saved "'+l.name+'" to My levels.');
 }
 async function commRemove(key){
   const l=commList.find(x=>x.key===key);if(!l||l.by!==uid||!db)return;
@@ -796,22 +808,23 @@ const ICONS={
 document.getElementById('epal').innerHTML=TOOLS.map(t=>'<button data-t="'+t[0]+'" title="'+t[1]+'" aria-label="'+t[1]+'">'+ICONS[t[0]]+'</button>').join('');
 function newGrid(w,h,sg){const g=[];for(let y=0;y<h;y++){g.push([]);for(let x=0;x<w;x++)g[y].push(x===0||y===0||x===w-1||y===h-1?'#':'.')}if(sg){g[h>>1][2]='S';g[h>>1][w-3]='G'}return g}
 function markTool(){document.querySelectorAll('#epal button').forEach(b=>b.classList.toggle('on',b.dataset.t===etool));const sel=document.getElementById('eshape'),ok=etool==='#'||etool==='L';sel.disabled=!ok;sel.value=ok?toolShape[etool]:'f'}
-let eUndo=[],eshp={},eori=0,esa=0,eanc=0;
+let eUndo=[],eshp={},eov={},eori=0,esa=0,eanc=0;
 // resize anchor: a 3x3 picker for which part of the level stays put when the size changes
 const ancEl=document.getElementById('eanc');
 ancEl.innerHTML=Array.from({length:9},(_,i)=>'<button data-anc="'+i+'"></button>').join('');
 function markAnc(){ancEl.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.anc===eanc))}
 markAnc();const toolShape={'#':'f','L':'f'},GLYPH=['\u25e4','\u25e5','\u25e2','\u25e3'];
+const eovClean=()=>cleanOv(eov,eg.map(r=>r.join('')));
 function eshpClean(){const o={};for(const k in eshp){const [x,y]=k.split(',').map(Number),v=eg[y]&&eg[y][x];if(v==='#'||v==='L')o[k]=eshp[k]}return o}
-function ePush(){eUndo.push({g:eg.map(r=>r.slice()),s:JSON.stringify(eshp),a:esa});if(eUndo.length>100)eUndo.shift()}
-function eUndoDo(){const u=eUndo.pop();if(u){eg=u.g;eshp=JSON.parse(u.s);esa=u.a||0;eRender()}}
+function ePush(){eUndo.push({g:eg.map(r=>r.slice()),s:JSON.stringify(eshp),o:JSON.stringify(eov),a:esa});if(eUndo.length>100)eUndo.shift();eDirty=true}
+function eUndoDo(){const u=eUndo.pop();if(u){eg=u.g;eshp=JSON.parse(u.s);eov=JSON.parse(u.o||'{}');esa=u.a||0;eRender();draftSoon()}}
 // save / load a level as a file
 let dlNS=null;(async()=>{try{if(window.claude)dlNS=await claude.use('downloads')}catch(e){}})();
 async function eExport(){
   const rows=eValid();if(!rows)return;
   const name=document.getElementById('ename').value.trim()||'Untitled';
   if(!dlNS){eStat('File saving is not available here');return}
-  const data=JSON.stringify({game:'boxrun.fun',v:1,name,rows,sh:eshpClean(),sa:esa});
+  const data=JSON.stringify({game:'boxrun.fun',v:1,name,rows,sh:eshpClean(),ov:eovClean(),sa:esa});
   try{await dlNS.save({filename:(name.replace(/[^\w -]+/g,'').trim().replace(/ +/g,'-')||'level')+'.json',data});eStat('Saved to file')}
   catch(e){eStat(e&&e.code==='declined'?'Save cancelled':'Could not save the file')}
 }
@@ -822,23 +835,38 @@ document.getElementById('efile').addEventListener('change',async e=>{
     if(!d||d.game!=='boxrun.fun'&&d.game!=='cube-runner'||!Array.isArray(d.rows))throw 0;
     const rows=d.rows.map(String),w=rows[0].length;
     if(rows.length<3||rows.length>60||w<3||w>60||rows.some(r=>r.length!==w||/[^#.LPISG]/.test(r)))throw 0;
-    ePush();eg=rows.map(r=>r.split(''));eid=null;esa=(d.sa|0)&3;eshp={};
+    ePush();eg=rows.map(r=>r.split(''));eid=null;esa=(d.sa|0)&3;eshp={};eov=cleanOv(d.ov,rows);
     for(const k in d.sh||{}){const v=d.sh[k];if(/^\d+,\d+$/.test(k)&&Array.isArray(v)&&typeof v[0]==='string'&&v[0].length===1&&'qsh'.includes(v[0])&&v[1]>=0&&v[1]<4)eshp[k]=[v[0],v[1]|0]}
     document.getElementById('ename').value=String(d.name||'Imported').slice(0,24);
-    document.getElementById('ew').value=w;document.getElementById('eh').value=rows.length;eRender();eStat('Imported as a new level');
+    document.getElementById('ew').value=w;document.getElementById('eh').value=rows.length;eRender();draftSoon();eStat('Imported as a new level');
   }catch(err){eStat('That is not a valid boxrun.fun level file')}
 });
 function eRot(){eori=(eori+1)%4;document.getElementById('erot').textContent=GLYPH[eori]}
 document.getElementById('eshape').addEventListener('change',e=>{if(etool==='#'||etool==='L')toolShape[etool]=e.target.value});
 function eStat(t){document.getElementById('estat').textContent=t}
+// drafts: unsaved editor work is kept automatically (one per level being edited) and restored the next time you open it
+let draftT=0,eDirty=false,eRestored=false;
+const draftKey=()=>eid||'new';
+function readDrafts(){try{return JSON.parse(store.get('boxrunDrafts')||'{}')}catch(e){return {}}}
+function flushDraft(){clearTimeout(draftT);draftT=0;if(editorEl.hidden||!eDirty||!eg.length)return;
+  const d=readDrafts();d[draftKey()]={rows:eg.map(r=>r.join('')),sh:eshp,ov:eov,sa:esa,name:document.getElementById('ename').value,at:Date.now()};store.set('boxrunDrafts',JSON.stringify(d))}
+function draftSoon(){clearTimeout(draftT);draftT=setTimeout(flushDraft,400)}
+function dropDraft(k){const d=readDrafts();delete d[k];store.set('boxrunDrafts',JSON.stringify(d))}
+addEventListener('pagehide',flushDraft);addEventListener('beforeunload',flushDraft);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushDraft()});
+document.getElementById('ename').addEventListener('input',()=>{eDirty=true;draftSoon()});
 function openEditor(id){
   if(id!==undefined){eUndo=[];eid=id;const c=id&&customs.find(c=>c.id===id);
     eshp=c&&c.sh?JSON.parse(JSON.stringify(c.sh)):{};
+    eov=c&&c.ov?JSON.parse(JSON.stringify(c.ov)):{};
     esa=c?(c.sa||0):0;
-    eg=c?c.rows.map(r=>r.split('')):newGrid(20,12,true);document.getElementById('ename').value=c?c.name:'My level'}
+    eg=c?c.rows.map(r=>r.split('')):newGrid(20,12,true);document.getElementById('ename').value=c?c.name:'My level';
+    eDirty=false;eRestored=false;const dr=readDrafts()[id||'new'];
+    if(dr&&Array.isArray(dr.rows)&&dr.rows.length&&dr.rows.every(r=>typeof r==='string'&&r.length===dr.rows[0].length)){
+      eg=dr.rows.map(r=>r.split(''));eshp=dr.sh||{};eov=dr.ov||{};esa=dr.sa|0;document.getElementById('ename').value=String(dr.name||'My level').slice(0,24);eDirty=true;eRestored=true}}
   document.getElementById('ew').value=eg[0].length;document.getElementById('eh').value=eg.length;
   keys.left=keys.right=false;touches.clear();banner.style.opacity=0;banner.innerHTML='';
-  state='menu';menuEl.hidden=true;editorEl.hidden=false;markTool();eStat('');eRender();
+  state='menu';menuEl.hidden=true;editorEl.hidden=false;markTool();eStat(eRestored?'Restored your unsaved changes. Press Save to keep them.':(store.ok?'':'Warning: this browser is blocking saving. Use Export to keep levels.'));eRestored=false;eRender();
 }
 function eRender(){
   const r=ec.getBoundingClientRect();ec.width=r.width*dpr;ec.height=r.height*dpr;
@@ -850,6 +878,7 @@ function eRender(){
     const sh=eshp[x+','+y];if(sh&&(v==='#'||v==='L')){ex.fillStyle=ECOL['.'];ex.fillRect(px,py,cs,cs);ex.fillStyle=ECOL[v];ex.beginPath();polyOf(x,y,sh).forEach(([X,Y],i)=>{const qx=eo.x+X*cs,qy=eo.y+Y*cs;i?ex.lineTo(qx,qy):ex.moveTo(qx,qy)});ex.closePath();ex.fill()}else{ex.fillStyle=ECOL[v];ex.fillRect(px,py,cs,cs)}
     if(v==='S'||v==='G'){ex.fillStyle=v==='S'?'#5ec8ff':'#2fd37a';const m=cs*.15;ex.fillRect(px+m,py+m,cs-2*m,cs-2*m);
       if(v==='S'){const q=cs*.12,iw=cs-2*m-2*q;ex.fillStyle='#0b2a3a';const fr=[[px+cs-m-q,py+m+q,q,iw],[px+m+q,py+cs-m-q,iw,q],[px+m,py+m+q,q,iw],[px+m+q,py+m,iw,q]][esa];ex.fillRect(...fr)}}
+    const ovp=eov[x+','+y];if(ovp)for(const [cc,kk,oo] of ovp){ex.fillStyle=ECOL[cc];ex.beginPath();polyOf(x,y,[kk,oo]).forEach(([X,Y],i)=>{const qx=eo.x+X*cs,qy=eo.y+Y*cs;i?ex.lineTo(qx,qy):ex.moveTo(qx,qy)});ex.closePath();ex.fill()}
     ex.strokeStyle='#ffffff14';ex.strokeRect(px+.5,py+.5,cs-1,cs-1);
   }
 }
@@ -858,13 +887,31 @@ function ePaint(e,first){
   if(y<0||x<0||y>=eg.length||x>=eg[0].length)return;
   if(etool==='S'&&!(first&&eg[y][x]==='S'))eg.forEach(row=>row.forEach((v,i)=>{if(v==='S')row[i]='.'}));
   if(etool==='S'&&first&&eg[y][x]==='S'){esa=(esa+1)%4;eRender();return}
-  const key=x+','+y,want=(etool==='#'||etool==='L')&&toolShape[etool]!=='f'?[toolShape[etool],eori]:undefined,same=JSON.stringify(want)===JSON.stringify(eshp[key]);
-  if(first&&eg[y][x]===etool&&etool!=='.'&&same){eg[y][x]='.';delete eshp[key];eRender();return}
-  if(eg[y][x]!==etool||!same){eg[y][x]=etool;if(want)eshp[key]=want;else delete eshp[key];eRender()}
+  // a tile holds a list of pieces [char, kind, orient]: an optional floor piece (pad/ice/goal) first, then walls/lava. Partial pieces layer on top of each other.
+  const isHaz=t=>t==='#'||t==='L',kind=isHaz(etool)?toolShape[etool]:'f',np=[etool,kind,kind==='f'?0:eori],cur0=ePieces(x,y);let list;
+  if(etool==='.')list=[];
+  else if(etool==='S')list=[np];
+  else{
+    const same=cur0.findIndex(p=>p[0]===np[0]&&p[1]===np[1]&&(np[1]==='f'||p[2]===np[2]));
+    if(same>=0){if(!first)return;list=cur0.filter((_,i)=>i!==same)}                       // clicking the same piece again removes it
+    else if(isHaz(etool))list=np[1]==='f'?[np]:cur0.filter(p=>!(p[1]==='f'&&isHaz(p[0]))).concat([np]);
+    else list=cur0.some(p=>p[1]==='f'&&isHaz(p[0]))?[np]:[np].concat(cur0.filter(p=>isHaz(p[0])));
+    if(list.length>4)list=list.slice(-4);
+  }
+  setPieces(x,y,list);eRender();
+}
+function ePieces(x,y){
+  const key=x+','+y,c=eg[y][x];if(c==='.'||c==='S')return [];
+  const sh=eshp[key];return [[c,sh?sh[0]:'f',sh?sh[1]:0]].concat((eov[key]||[]).map(v=>v.slice()));
+}
+function setPieces(x,y,list){
+  const key=x+','+y;eg[y][x]=list.length?list[0][0]:'.';
+  if(list.length&&list[0][1]!=='f')eshp[key]=[list[0][1],list[0][2]];else delete eshp[key];
+  const rest=list.slice(1).filter(p=>p[1]!=='f');if(rest.length)eov[key]=rest;else delete eov[key];
 }
 ec.addEventListener('pointerdown',e=>{epaint=true;ec.setPointerCapture(e.pointerId);ePush();ePaint(e,true)});
 ec.addEventListener('pointermove',e=>{if(epaint)ePaint(e)});
-['pointerup','pointercancel'].forEach(n=>ec.addEventListener(n,()=>epaint=false));
+['pointerup','pointercancel'].forEach(n=>ec.addEventListener(n,()=>{epaint=false;draftSoon()}));
 editorEl.addEventListener('pointerdown',e=>e.stopPropagation());
 addEventListener('resize',()=>{if(!editorEl.hidden)eRender()});
 function eValid(){
@@ -879,6 +926,7 @@ editorEl.addEventListener('click',e=>{
   if(b.dataset.anc!=null){eanc=+b.dataset.anc;markAnc();return}
   const a=b.dataset.e,name=(document.getElementById('ename').value.trim()||'Untitled');
   if(a==='rot')eRot();
+  else if(a==='new'){ePush();eid=null;eg=newGrid(20,12,true);eshp={};eov={};esa=0;document.getElementById('ename').value='My level';document.getElementById('ew').value=20;document.getElementById('eh').value=12;eDirty=false;dropDraft('new');eRender();eStat('New level')}
   else if(a==='export')eExport();
   else if(a==='import')document.getElementById('efile').click();
   else if(a==='back'){editorEl.hidden=true;showMenu(true)}
@@ -887,12 +935,15 @@ editorEl.addEventListener('click',e=>{
     const oh=eg.length,ow=eg[0].length,ax=eanc%3,ay=(eanc/3)|0,ox=ax===0?0:ax===1?Math.floor((w-ow)/2):w-ow,oy=ay===0?0:ay===1?Math.floor((h-oh)/2):h-oh,ns={};
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const sx=x-ox,sy=y-oy;if(sx>=0&&sy>=0&&sx<ow&&sy<oh)g[y][x]=eg[sy][sx]}
     for(const k in eshp){const [sx,sy]=k.split(',').map(Number),nx=sx+ox,ny=sy+oy;if(nx>=0&&ny>=0&&nx<w&&ny<h)ns[nx+','+ny]=eshp[k]}
-    ePush();eg=g;eshp=ns;eRender();eStat(eg.flat().includes('S')?'':'The start tile was cropped out. Place it again.')}
-  else if(a==='test'){const rows=eValid();if(rows){editorEl.hidden=true;mode='test';cur={id:null,name,rows,sh:eshpClean(),sa:esa};fullRun=false;total=0;deaths=0;load(0)}}
+    const nov={};for(const k in eov){const [sx,sy]=k.split(',').map(Number),nx=sx+ox,ny=sy+oy;if(nx>=0&&ny>=0&&nx<w&&ny<h)nov[nx+','+ny]=eov[k]}
+    ePush();eg=g;eshp=ns;eov=nov;eRender();draftSoon();eStat(eg.flat().includes('S')?'':'The start tile was cropped out. Place it again.')}
+  else if(a==='test'){const rows=eValid();if(rows){editorEl.hidden=true;mode='test';cur={id:null,name,rows,sh:eshpClean(),ov:eovClean(),sa:esa};fullRun=false;total=0;deaths=0;load(0)}}
   else if(a==='save'){const rows=eValid();if(!rows)return;
-    if(eid){const c=customs.find(c=>c.id===eid);if(c){const sh=eshpClean();if(c.rows.join()!==rows.join()||JSON.stringify(c.sh||{})!==JSON.stringify(sh)||(c.sa||0)!==esa){delete pb.cl[eid];delete pb.cg[eid];savePB()}c.name=name;c.rows=rows;c.sh=sh;c.sa=esa}}
-    else{eid='c'+Date.now().toString(36);customs.push({id:eid,name,rows,sh:eshpClean(),sa:esa})}
-    saveCustoms();eStat('Saved \u2713')}
+    if(eid){const c=customs.find(c=>c.id===eid);if(c){const sh=eshpClean(),ov=eovClean();if(c.rows.join()!==rows.join()||JSON.stringify(c.sh||{})!==JSON.stringify(sh)||JSON.stringify(c.ov||{})!==JSON.stringify(ov)||(c.sa||0)!==esa){delete pb.cl[eid];delete pb.cg[eid];savePB()}c.name=name;c.rows=rows;c.sh=sh;c.ov=ov;c.sa=esa}}
+    else{eid='c'+Date.now().toString(36);customs.push({id:eid,name,rows,sh:eshpClean(),ov:eovClean(),sa:esa})}
+    const ok=saveCustoms();
+    if(ok){dropDraft(eid);dropDraft('new');eDirty=false;eStat('Saved \u2713 (kept in this browser)');try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}
+    else eStat('Could not save: this browser is blocking storage. Use Export to keep the level.')}
 });
 load(0);showMenu();requestAnimationFrame(loop);
 </script>
