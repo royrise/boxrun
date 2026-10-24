@@ -112,7 +112,7 @@ canvas{display:block;width:100%;height:100%}
   <button class="ib" data-a="skins" aria-label="Skins" data-tip="Skins: choose your cube's colours and unlock more"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2.2-.5-1.2.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg></button>
  </div>
 </div></div>
- <div class="panel wide" id="p-levels" hidden><h2>Level Select</h2><div id="lvwrap"><div id="lvleft"><div id="lvlist"></div><small id="lvnote"></small></div><div id="lvside"><div class="lbt" id="lvsidet">Overall</div><div id="lvsideb"></div></div></div><button data-a="back">Back</button></div>
+ <div class="panel wide" id="p-levels" hidden><h2>Level Select</h2><div id="lvwrap"><div id="lvleft"><div id="lvlist"></div><small id="lvnote"></small><div class="crow"><button data-a="bkup" title="Download one file with all your levels and records">Back up all</button><button data-a="rstr" title="Load a backup file">Restore</button></div><input type="file" id="bfile" accept=".json,application/json" hidden></div><div id="lvside"><div class="lbt" id="lvsidet">Overall</div><div id="lvsideb"></div></div></div><button data-a="back">Back</button></div>
  <div class="panel wide" id="p-comm" hidden><h2>Community levels</h2><div><select id="csort" title="Sort levels"><option value="rel">Relevance</option><option value="up">Most upvotes</option><option value="net">Top rated</option><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select></div><div id="clist"></div><small id="cnote"></small><button data-a="back">Back</button></div>
  <div class="panel" id="p-skins" hidden><h2>Skins</h2><div id="skinprev"></div><div class="lbt">Primary colour</div><div class="sw" id="swp"></div><div class="lbt">Secondary colour</div><div class="sw" id="sws"></div><small id="skinnote"></small><button data-a="back">Back</button></div>
  <div class="panel" id="p-endless" hidden><h2>Endless</h2><p class="sub">A random winding track. Go as far as you can. The same seed always gives the same track.</p><div class="seg" id="emode"><button data-a="emrand">Random seed</button><button data-a="emset">Set seed</button></div><input id="eseed" maxlength="12" autocomplete="off" aria-label="Seed" placeholder="Type a seed"><small id="enote"></small><div id="ebest"></div><button data-a="estart" class="pri">Start</button><button data-a="back">Back</button></div>
@@ -284,7 +284,7 @@ menuEl.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)ret
   else if(d.cs)commCopy(d.cs);
   else if(d.cr)commRemove(d.cr);
   else if(d.lb)showLB(d.lb);
-  else{const a=d.a;if(a==='play')startLevel(0,true);else if(a==='levels'){buildLevels();show('levels')}else if(a==='stats'){buildStats();show('stats')}else if(a==='lb')showLB('run3');else if(a==='edit')openEditor(null);else if(a==='skins'){buildSkins();show('skins')}else if(a==='comm')showComm();else if(a==='endless')openEndless();else if(a==='emrand'){pb.endSet=false;savePB();endUI()}else if(a==='emset'){pb.endSet=true;savePB();endUI()}else if(a==='estart')endStart();else show('main')}});
+  else{const a=d.a;if(a==='play')startLevel(0,true);else if(a==='levels'){buildLevels();show('levels')}else if(a==='stats'){buildStats();show('stats')}else if(a==='lb')showLB('run3');else if(a==='edit')openEditor(null);else if(a==='bkup')backupAll();else if(a==='rstr')document.getElementById('bfile').click();else if(a==='skins'){buildSkins();show('skins')}else if(a==='comm')showComm();else if(a==='endless')openEndless();else if(a==='emrand'){pb.endSet=false;savePB();endUI()}else if(a==='emset'){pb.endSet=true;savePB();endUI()}else if(a==='estart')endStart();else show('main')}});
 menuEl.addEventListener('pointerdown',e=>e.stopPropagation());
 document.getElementById('banner').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(mode==='endless'){const k=b.dataset.b;if(k==='again')startEndless(curSeed,curSet);else if(k==='new')endNew();else showMenu();return}if(b.dataset.b==='again')again();else nextLevel()});
 document.getElementById('banner').addEventListener('pointerdown',e=>e.stopPropagation());
@@ -820,14 +820,48 @@ function ePush(){eUndo.push({g:eg.map(r=>r.slice()),s:JSON.stringify(eshp),o:JSO
 function eUndoDo(){const u=eUndo.pop();if(u){eg=u.g;eshp=JSON.parse(u.s);eov=JSON.parse(u.o||'{}');esa=u.a||0;eRender();draftSoon()}}
 // save / load a level as a file
 let dlNS=null;(async()=>{try{if(window.claude)dlNS=await claude.use('downloads')}catch(e){}})();
+// save a file: through the host's file-saving capability when there is one, otherwise a normal browser download (works on any website)
+async function saveFile(filename,data){
+  if(dlNS){await dlNS.save({filename,data});return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=filename;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+}
 async function eExport(){
   const rows=eValid();if(!rows)return;
   const name=document.getElementById('ename').value.trim()||'Untitled';
-  if(!dlNS){eStat('File saving is not available here');return}
   const data=JSON.stringify({game:'boxrun.fun',v:1,name,rows,sh:eshpClean(),ov:eovClean(),sa:esa});
-  try{await dlNS.save({filename:(name.replace(/[^\w -]+/g,'').trim().replace(/ +/g,'-')||'level')+'.json',data});eStat('Saved to file')}
+  try{await saveFile((name.replace(/[^\w -]+/g,'').trim().replace(/ +/g,'-')||'level')+'.json',data);eStat('Saved to file')}
   catch(e){eStat(e&&e.code==='declined'?'Save cancelled':'Could not save the file')}
 }
+// backup / restore: one file with every custom level and your records, for browsers that clear site data
+async function backupAll(){
+  const data=JSON.stringify({game:'boxrun.fun',v:2,at:Date.now(),pb,customs});
+  try{await saveFile('boxrun-backup.json',data);lvNote('Backup saved: '+customs.length+' custom level(s) and your records.')}
+  catch(e){lvNote(e&&e.code==='declined'?'Backup cancelled.':'Could not save the backup file.')}
+}
+function mergeBackup(d){
+  let added=0;const num=v=>typeof v==='number'&&isFinite(v)&&v>=0?v:null,b=d.pb||{};
+  for(const c of d.customs){
+    const cl=cleanLvl(c);if(!cl||typeof c.id!=='string'||!/^[\w-]{1,40}$/.test(c.id))continue;
+    const item={id:c.id,name:cl.name,rows:cl.rows,sh:cl.sh,ov:cl.ov,sa:cl.sa},i=customs.findIndex(x=>x.id===c.id);
+    if(i>=0)customs[i]=item;else{customs.push(item);added++}
+  }
+  for(const k in (b.levels||{})){const t=num(b.levels[k]);if(t!=null&&LID.includes(k)&&(pb.levels[k]==null||t<pb.levels[k])){pb.levels[k]=t;if(b.ghosts&&Array.isArray(b.ghosts[k]))pb.ghosts[k]=b.ghosts[k]}}
+  for(const k in (b.cl||{})){const t=num(b.cl[k]);if(t!=null&&customs.some(c=>c.id===k)&&(pb.cl[k]==null||t<pb.cl[k])){pb.cl[k]=t;if(b.cg&&Array.isArray(b.cg[k]))pb.cg[k]=b.cg[k]}}
+  const r=num(b.run);if(r!=null&&(pb.run==null||r<pb.run))pb.run=r;
+  pb.completions=Math.max(pb.completions||0,num(b.completions)||0);pb.deaths=Math.max(pb.deaths||0,num(b.deaths)||0);pb.endBest=Math.max(pb.endBest||0,num(b.endBest)||0);
+  if(b.skin&&COLORS.some(c=>c.id===b.skin.p)&&COLORS.some(c=>c.id===b.skin.s)&&pb.skin.p==='sky'&&pb.skin.s==='navy')pb.skin={p:b.skin.p,s:b.skin.s};
+  return added;
+}
+document.getElementById('bfile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d||d.game!=='boxrun.fun'||d.v!==2||!Array.isArray(d.customs))throw 0;
+    const added=mergeBackup(d),ok=saveCustoms()&savePB();buildLevels();
+    lvNote('Restored: '+added+' new custom level(s) added; your fastest times were kept.'+(ok?'':' Warning: this browser is blocking saving.'));
+  }catch(err){lvNote('That is not a boxrun.fun backup file.')}
+});
 document.getElementById('efile').addEventListener('change',async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   try{
@@ -842,7 +876,7 @@ document.getElementById('efile').addEventListener('change',async e=>{
   }catch(err){eStat('That is not a valid boxrun.fun level file')}
 });
 function eRot(){eori=(eori+1)%4;document.getElementById('erot').textContent=GLYPH[eori]}
-document.getElementById('eshape').addEventListener('change',e=>{if(etool==='#'||etool==='L')toolShape[etool]=e.target.value});
+document.getElementById('eshape').addEventListener('change',e=>{if(etool==='#'||etool==='L'){toolShape[etool]=e.target.value;eStat(e.target.value==='f'?'':'Partial blocks stack: place another block on the same tile to overlap them.')}});
 function eStat(t){document.getElementById('estat').textContent=t}
 // drafts: unsaved editor work is kept automatically (one per level being edited) and restored the next time you open it
 let draftT=0,eDirty=false,eRestored=false;
@@ -922,7 +956,7 @@ function eValid(){
 }
 editorEl.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.t){etool=b.dataset.t;markTool();eStat(etool==='S'?'Click the start tile again to rotate it':'');return}
+  if(b.dataset.t){const prev=etool;etool=b.dataset.t;if((prev==='#'||prev==='L')&&(etool==='#'||etool==='L'))toolShape[etool]=toolShape[prev];markTool();eStat(etool==='S'?'Click the start tile again to rotate it':'');return}
   if(b.dataset.anc!=null){eanc=+b.dataset.anc;markAnc();return}
   const a=b.dataset.e,name=(document.getElementById('ename').value.trim()||'Untitled');
   if(a==='rot')eRot();
@@ -942,7 +976,7 @@ editorEl.addEventListener('click',e=>{
     if(eid){const c=customs.find(c=>c.id===eid);if(c){const sh=eshpClean(),ov=eovClean();if(c.rows.join()!==rows.join()||JSON.stringify(c.sh||{})!==JSON.stringify(sh)||JSON.stringify(c.ov||{})!==JSON.stringify(ov)||(c.sa||0)!==esa){delete pb.cl[eid];delete pb.cg[eid];savePB()}c.name=name;c.rows=rows;c.sh=sh;c.ov=ov;c.sa=esa}}
     else{eid='c'+Date.now().toString(36);customs.push({id:eid,name,rows,sh:eshpClean(),ov:eovClean(),sa:esa})}
     const ok=saveCustoms();
-    if(ok){dropDraft(eid);dropDraft('new');eDirty=false;eStat('Saved \u2713 (kept in this browser)');try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}
+    if(ok){dropDraft(eid);dropDraft('new');eDirty=false;eStat('Saved \u2713 (kept in this browser). Tip: Back up all, in Level Select, keeps a copy in a file.');try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}
     else eStat('Could not save: this browser is blocking storage. Use Export to keep the level.')}
 });
 load(0);showMenu();requestAnimationFrame(loop);
